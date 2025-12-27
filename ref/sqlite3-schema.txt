@@ -1,9 +1,10 @@
 CREATE TABLE words (
 id INTEGER PRIMARY KEY,
 kanji_word TEXT,
-sentence TEXT,
+japanese_sentence TEXT,
 kana_word TEXT,
-english_word TEXT);
+english_word TEXT, 
+english_sentence TEXT);
 CREATE TABLE last_tested (
 id INTEGER PRIMARY KEY,
 word_id INTEGER,

@@ -1,0 +1,61 @@
+Screen {
+    align: center middle;
+}
+
+#container {
+    width: 80%;
+    height: auto;
+    border: solid green;
+    padding: 1 2;
+    background: $surface;
+}
+
+Label {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 1;
+}
+
+.sentence {
+    text-style: bold;
+    color: $text;
+    margin-bottom: 2;
+}
+
+.prompt {
+    color: $secondary;
+}
+
+Input {
+    margin: 1 0;
+}
+
+.result-correct {
+    color: $success;
+    text-style: bold;
+}
+
+.result-incorrect {
+    color: $error;
+    text-style: bold;
+}
+
+.translation {
+    margin-top: 1;
+    color: $accent;
+}
+
+#footer-buttons {
+    layout: horizontal;
+    align: center middle;
+    margin-top: 2;
+    display: none;
+}
+
+Button {
+    margin: 0 1;
+}
+
+.hidden {
+    display: none;
+}

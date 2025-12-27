@@ -1,24 +1,18 @@
 [project]
 name = "vocab-tester"
 version = "0.1.0"
-description = "Add your description here"
+description = "Japanese vocab CLI"
 readme = "README.md"
-authors = [
-    { name = "Ben Allen", email = "ben05allen@hotmail.com" }
-]
+authors = [{ name = "Ben Allen", email = "ben05allen@hotmail.com" }]
 requires-python = ">=3.14"
-dependencies = [
-    "textual>=6.11.0",
-]
+dependencies = ["textual>=6.11.0"]
 
 [project.scripts]
-vocab-tester = "vocab_tester:main"
+vocab-tester = "vocab_tester.main:main"
 
 [build-system]
 requires = ["uv_build>=0.9.16,<0.10.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "ruff>=0.14.10",
-]
+dev = ["ruff>=0.14.10"]

@@ -5,5 +5,6 @@ repos:
       # Run the linter
       - id: ruff-check
         args: [--fix] # Auto-fix lint issues
+
       # Run the formatter
       - id: ruff-format
