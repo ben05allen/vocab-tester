@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -175,7 +176,6 @@ class Database:
         # Check if exists
         cur.execute("SELECT id FROM last_tested WHERE word_id = ?", (word_id,))
         row = cur.fetchone()
-        import time
 
         timestamp = int(time.time())
 

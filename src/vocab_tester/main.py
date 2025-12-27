@@ -92,14 +92,14 @@ class QuizScreen(Container):
 
         result_text = ""
         if overall_correct:
-            result_text = "[class.result-correct]Correct![/][class.result-correct]"
+            result_text = "[green bold]Correct![/]"
         else:
             parts = []
             if not is_kana_correct:
                 parts.append(f"Reading: {self.kana}")
             if not is_meaning_correct:
                 parts.append(f"Meaning: {self.meaning}")
-            result_text = "[class.result-incorrect]Incorrect.[/] " + ", ".join(parts)
+            result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
 
         self.query_one("#result_message", Static).update(result_text)
 
