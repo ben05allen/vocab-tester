@@ -14,4 +14,4 @@ class VocabTesterApp(App):
         yield QuizScreen(Database())
 
     def action_toggle_dark(self) -> None:
-        self.dark = not self.dark
+        self.theme = "textual-light" if self.theme == "textual-dark" else "textual-dark"
