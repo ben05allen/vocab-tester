@@ -16,20 +16,20 @@ A Terminal User Interface (TUI) application built with Textual to help users pra
 The project follows the standard "src" layout for packaged Python applications:
 
 vocab-tester/
-├── pyproject.toml           # Project metadata and dependencies
-├── uv.lock                  # Lockfile for reproducible builds
-├── .pre-commit-config.yaml  # Pre-commit configuration
-├── GEMINI.md                # (This file) Context for AI
+├── pyproject.toml # Project metadata and dependencies
+├── uv.lock # Lockfile for reproducible builds
+├── .pre-commit-config.yaml # Pre-commit configuration
+├── GEMINI.md # (This file) Context for AI
 ├── src/
-│   └── vocab_tester/
-│       ├── __init__.py
-│       ├── main.py          # App entry point
-│       ├── db.py            # SQLite logic
-│       └── styles.tcss      # Textual CSS
+│ └── vocab_tester/
+│ ├── **init**.py
+│ ├── main.py # App entry point
+│ ├── db.py # SQLite logic
+│ └── styles.tcss # Textual CSS
 ├── ref/
-│   └── sqlite3-schema.txt   # Database schema definition
+│ └── sqlite3-schema.txt # Database schema definition
 └── data/
-    └── vocab.db             # SQLite database file (created at runtime)
+└── vocab.db # SQLite database file (created at runtime)
 
 ## 🛠 Development Workflow
 
@@ -50,3 +50,5 @@ The database schema is record in `ref/sqlite3-schema.txt`
 2. Type Hinting: Use PEP 484 type hints for all function signatures.
 3. Database Access: Use context managers for SQLite connections to ensure they close properly.
 4. Ruff: Ensure all code passes ruff default rules (no unused imports, proper spacing).
+5. All imports should be at the top of files.
+6. The project structure should represent the current state of the project, but for new development we encourage a modular approach to keep the code structure clean and easily maintainable.
