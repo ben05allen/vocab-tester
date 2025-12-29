@@ -96,6 +96,8 @@ class QuizScreen(Container):
         # Record result (logic in db can be expanded)
         if self.question_data:
             self.db.record_result(self.question_data[0], overall_correct)
+            if hasattr(self.app, "update_score"):
+                self.app.update_score(overall_correct)
 
             if not overall_correct:
                 # Re-queue the word at different positions to practice again
