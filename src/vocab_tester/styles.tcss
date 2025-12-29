@@ -59,3 +59,45 @@ Button {
 .hidden {
     display: none;
 }
+
+/* Add Word Screen Styles */
+
+#add_word_container {
+    width: 60%;
+    height: auto;
+    border: solid $accent;
+    padding: 1 2;
+    background: $surface;
+    align: center middle;
+    overflow-y: auto;
+}
+
+#add_word_title {
+    text-style: bold;
+    color: $accent;
+    margin-bottom: 2;
+    text-align: center;
+}
+
+#form_inputs {
+    margin-bottom: 2;
+}
+
+#form_buttons {
+    layout: horizontal;
+    align: center middle;
+}
+
+#status_message {
+    text-align: center;
+    margin-top: 1;
+    height: 1;
+}
+
+.error {
+    color: $error;
+}
+
+.success {
+    color: $success;
+}

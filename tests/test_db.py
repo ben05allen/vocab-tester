@@ -70,3 +70,31 @@ def test_record_result(temp_db):
     assert row[0] == 0
 
     con.close()
+
+
+def test_add_word(temp_db):
+    """Test adding a new word."""
+    kanji = "テスト"
+    kana = "てすと"
+    english = "test"
+    jp_sentence = "これはテストです。"
+    en_sentence = "This is a test."
+
+    temp_db.add_word(kanji, kana, english, jp_sentence, en_sentence)
+
+    con = temp_db.get_connection()
+    cur = con.cursor()
+    cur.execute(
+        "SELECT * FROM words WHERE kanji_word = ?",
+        (kanji,),
+    )
+    row = cur.fetchone()
+    con.close()
+
+    assert row is not None
+    # schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence
+    assert row[1] == kanji
+    assert row[2] == jp_sentence
+    assert row[3] == kana
+    assert row[4] == english
+    assert row[5] == en_sentence

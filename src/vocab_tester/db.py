@@ -168,6 +168,24 @@ class Database:
         con.close()
         return row
 
+    def add_word(
+        self,
+        kanji: str,
+        kana: str,
+        english: str,
+        jp_sentence: str,
+        en_sentence: str,
+    ) -> None:
+        """Adds a new word to the database."""
+        con = self.get_connection()
+        cur = con.cursor()
+        cur.execute(
+            "INSERT INTO words (kanji_word, kana_word, english_word, japanese_sentence, english_sentence) VALUES (?, ?, ?, ?, ?)",
+            (kanji, kana, english, jp_sentence, en_sentence),
+        )
+        con.commit()
+        con.close()
+
     def record_result(self, word_id: int, correct: bool) -> None:
         """Records the result of a test."""
         # This is a placeholder for future logic (e.g. spaced repetition)
