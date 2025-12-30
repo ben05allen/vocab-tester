@@ -11,30 +11,11 @@ A Terminal User Interface (TUI) application built with Textual to help users pra
 - Linting/Formatting: ruff
 - Git Hooks: prek (pre-commit management)
 
-## 📁 Project Structure
-
-The project follows the standard "src" layout for packaged Python applications:
-
-vocab-tester/
-├── pyproject.toml # Project metadata and dependencies
-├── uv.lock # Lockfile for reproducible builds
-├── .pre-commit-config.yaml # Pre-commit configuration
-├── GEMINI.md # (This file) Context for AI
-├── src/
-│ └── vocab_tester/
-│ ├── **init**.py
-│ ├── main.py # App entry point
-│ ├── db.py # SQLite logic
-│ └── styles.tcss # Textual CSS
-├── ref/
-│ └── sqlite3-schema.txt # Database schema definition
-└── data/
-└── vocab.db # SQLite database file (created at runtime)
-
 ## 🛠 Development Workflow
 
 When helping me write code, please adhere to these commands:
 
+- Ensure that new features are developed in a git branch separate from the main (or master) branch
 - Environment Setup: uv sync
 - Running the App: `uv run vocab-tester` (once entry points are defined)
 - Linting: uv run ruff check .
@@ -46,10 +27,13 @@ The database schema is record in `ref/sqlite3-schema.txt`
 
 ## 📝 Coding Guidelines
 
+1. This is a Python project with a SQLite3 database using the Textualize library for UI, and uv for dependencies and packaging.
 1. Textual Best Practices: Use `.tcss` files for styling rather than inline styles. Use Bindings for navigation.
-2. Type Hinting: Use PEP 484 type hints for all function signatures.
-3. Database Access: Use context managers for SQLite connections to ensure they close properly.
-4. Ruff: Ensure all code passes ruff default rules (no unused imports, proper spacing).
-5. All imports should be at the top of files.
-6. The project structure should represent the current state of the project, but for new development we encourage a modular approach to keep the code structure clean and easily maintainable.
-7. Always prefer `| None` over `Optional[]`
+1. Type Hinting: Use PEP 484 type hints for all function signatures.
+1. Database Access: Use context managers for SQLite connections to ensure they close properly.
+1. New functionality and code edits MUST NOT happen in the main git branch. Before making any code changes ensure that we are not in the main branch.
+1. All imports should be at the top of files.
+1. There is no need to import older types such as `List` or `Tuple` from `typing`, just use the newer variants such as `list` or `tuple`.
+1. Always prefer `| None` over `Optional[]`
+1. Ruff: Ensure all code passes ruff default rules (no unused imports, proper spacing). Autofix any ruff checks by using the `--fix` flag and keep code formatted by running `ruff format`. This is also enforced by a pre-commit hook.
+1. When adding new functionality ensure that appropriate pytest tests are added as well.
