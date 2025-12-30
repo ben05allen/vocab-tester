@@ -2,7 +2,6 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
 from textual.reactive import reactive
-from textual.binding import Binding
 from .db import Database
 from .edit_word_screen import EditWordScreen
 
@@ -12,10 +11,6 @@ class QuizScreen(Container):
 
     current_word = reactive(None)
     step = reactive("kana")  # kana -> meaning -> result
-
-    BINDINGS = [
-        Binding("e", "edit_word", "Edit Word", show=False),
-    ]
 
     def __init__(self, db: Database):
         super().__init__()
@@ -112,7 +107,7 @@ class QuizScreen(Container):
 
         result_text = ""
         if overall_correct:
-            result_text = "[green bold]Correct![/]]"
+            result_text = "[green bold]Correct![/]"
         else:
             parts = []
             if not is_kana_correct:
@@ -169,7 +164,7 @@ class QuizScreen(Container):
 
                 result_text = ""
                 if overall_correct:
-                    result_text = "[green bold]Correct![/]]"
+                    result_text = "[green bold]Correct![/]"
                 else:
                     parts = []
                     if not is_kana_correct:

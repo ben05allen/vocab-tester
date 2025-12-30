@@ -10,6 +10,7 @@ class VocabTesterApp(App):
     BINDINGS = [
         ("d", "toggle_dark", "Toggle dark mode"),
         ("a", "add_word", "Add Word"),
+        ("e", "edit_word", "Edit Word"),
         ("q", "quit", "Quit"),
     ]
 
@@ -37,6 +38,9 @@ class VocabTesterApp(App):
         # I'll stick to creating it in compose or __init__.
         # Let's use __init__ or just create it here.
         yield QuizScreen(Database())
+
+    def action_edit_word(self) -> None:
+        self.query_one(QuizScreen).action_edit_word()
 
     def action_add_word(self) -> None:
         self.push_screen(AddWordScreen(Database()))
