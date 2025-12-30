@@ -2,7 +2,9 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
 from textual.reactive import reactive
+from textual.binding import Binding
 from .db import Database
+from .edit_word_screen import EditWordScreen
 
 
 class QuizScreen(Container):
@@ -10,6 +12,10 @@ class QuizScreen(Container):
 
     current_word = reactive(None)
     step = reactive("kana")  # kana -> meaning -> result
+
+    BINDINGS = [
+        Binding("e", "edit_word", "Edit Word", show=False),
+    ]
 
     def __init__(self, db: Database):
         super().__init__()
@@ -128,3 +134,48 @@ class QuizScreen(Container):
             self.next_question()
         elif event.button.id == "quit_btn":
             self.app.exit()
+
+    def action_edit_word(self) -> None:
+        if self.step == "result" and self.question_data:
+            self.app.push_screen(
+                EditWordScreen(self.db, self.question_data[0]), self.on_edit_word_done
+            )
+
+    def on_edit_word_done(self, changed: bool) -> None:
+        if changed and self.question_data:
+            # Reload data
+            word_id = self.question_data[0]
+            new_data = self.db.get_word(word_id)
+            if new_data:
+                self.question_data = new_data
+                (
+                    _,
+                    self.kanji,
+                    self.sentence,
+                    self.kana,
+                    self.meaning,
+                    self.eng_sentence,
+                ) = new_data
+
+                # Refresh display
+                full_info = f"Sentence: {self.eng_sentence}\n({self.kanji} = {self.kana} / {self.meaning})"
+                self.query_one("#full_info", Static).update(full_info)
+                self.query_one("#sentence_label", Label).update(self.sentence)
+
+                # Re-calculate result message
+                is_kana_correct = self.kana_answer == self.kana
+                is_meaning_correct = self.meaning_answer.lower() == self.meaning.lower()
+                overall_correct = is_kana_correct and is_meaning_correct
+
+                result_text = ""
+                if overall_correct:
+                    result_text = "[green bold]Correct![/]]"
+                else:
+                    parts = []
+                    if not is_kana_correct:
+                        parts.append(f"Reading: {self.kana}")
+                    if not is_meaning_correct:
+                        parts.append(f"Meaning: {self.meaning}")
+                    result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
+
+                self.query_one("#result_message", Static).update(result_text)

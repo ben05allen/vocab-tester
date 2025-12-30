@@ -52,3 +52,4 @@ The database schema is record in `ref/sqlite3-schema.txt`
 4. Ruff: Ensure all code passes ruff default rules (no unused imports, proper spacing).
 5. All imports should be at the top of files.
 6. The project structure should represent the current state of the project, but for new development we encourage a modular approach to keep the code structure clean and easily maintainable.
+7. Always prefer `| None` over `Optional[]`

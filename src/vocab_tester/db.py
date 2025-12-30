@@ -1,7 +1,9 @@
 import sqlite3
 import time
 from pathlib import Path
-from typing import Optional, Tuple
+
+
+type WordEntry = tuple[int, str, str, str, str, str]
 
 DB_PATH = Path("data/vocab.db")
 SCHEMA_PATH = Path("ref/sqlite3-schema.txt")
@@ -155,7 +157,7 @@ class Database:
         )
         con.commit()
 
-    def get_random_word(self) -> Optional[Tuple[int, str, str, str, str, str]]:
+    def get_random_word(self) -> WordEntry | None:
         """
         Returns a random word tuple:
         (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence)
@@ -167,6 +169,37 @@ class Database:
         row = cur.fetchone()
         con.close()
         return row
+
+    def get_word(self, word_id: int) -> WordEntry | None:
+        """
+        Returns a word tuple by ID:
+        (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence)
+        """
+        con = self.get_connection()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM words WHERE id = ?", (word_id,))
+        row = cur.fetchone()
+        con.close()
+        return row
+
+    def update_word(
+        self,
+        word_id: int,
+        kanji: str,
+        kana: str,
+        english: str,
+        jp_sentence: str,
+        en_sentence: str,
+    ) -> None:
+        """Updates an existing word in the database."""
+        con = self.get_connection()
+        cur = con.cursor()
+        cur.execute(
+            "UPDATE words SET kanji_word=?, kana_word=?, english_word=?, japanese_sentence=?, english_sentence=? WHERE id=?",
+            (kanji, kana, english, jp_sentence, en_sentence, word_id),
+        )
+        con.commit()
+        con.close()
 
     def add_word(
         self,
