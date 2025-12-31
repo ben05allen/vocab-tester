@@ -80,6 +80,7 @@ This project stands on the shoulders of several fantastic open-source libraries:
 - **[Textualize](https://github.com/Textualize/textual)**: Powering the beautiful terminal interface.
 - **[Pydantic](https://github.com/pydantic/pydantic)**: Handling robust data validation and modeling.
 - **[pytest](https://github.com/pytest-dev/pytest)**: Ensuring the reliability of our codebase through testing.
+- **[uv](https://github.com/astral-sh/uv)**: An extremely fast Python package and project manager, written in Rust.
 
 If you find this application useful, please consider contributing to or supporting these incredible projects.
 
