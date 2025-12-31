@@ -5,7 +5,10 @@ description = "Japanese vocab CLI"
 readme = "README.md"
 authors = [{ name = "Ben Allen", email = "ben05allen@hotmail.com" }]
 requires-python = ">=3.14"
-dependencies = ["textual>=6.11.0"]
+dependencies = [
+    "pydantic>=2.12.5",
+    "textual>=6.11.0",
+]
 
 [project.scripts]
 vocab-tester = "vocab_tester.main:main"

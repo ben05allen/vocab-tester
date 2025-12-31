@@ -5,6 +5,7 @@ from textual.reactive import reactive
 from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
+from .models import Word
 
 
 class QuizScreen(Container):
@@ -17,7 +18,7 @@ class QuizScreen(Container):
         super().__init__()
         self.db = db
         self.queue = []
-        self.question_data = None
+        self.question_data: Word | None = None
         self.kana_answer = ""
         self.meaning_answer = ""
         self.current_tag_filter = None
@@ -56,23 +57,17 @@ class QuizScreen(Container):
             return
 
         self.question_data = self.queue.pop(0)
-        # question_data: (id, kanji, sentence, kana, meaning, eng_sentence, tag)
-        (
-            _,
-            self.kanji,
-            self.sentence,
-            self.kana,
-            self.meaning,
-            self.eng_sentence,
-            self.tag,
-        ) = self.question_data
 
         self.step = "kana"
         self.kana_answer = ""
         self.meaning_answer = ""
 
-        self.query_one("#sentence_label", Label).update(self.sentence)
-        self.query_one("#prompt_label", Label).update(f"Reading for: {self.kanji}")
+        self.query_one("#sentence_label", Label).update(
+            self.question_data.japanese_sentence
+        )
+        self.query_one("#prompt_label", Label).update(
+            f"Reading for: {self.question_data.kanji_word}"
+        )
 
         inp = self.query_one("#answer_input", Input)
         inp.value = ""
@@ -84,12 +79,17 @@ class QuizScreen(Container):
         self.query_one("#footer-buttons").styles.display = "none"
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        if not self.question_data:
+            return
+
         val = event.value.strip()
 
         if self.step == "kana":
             self.kana_answer = val
             self.step = "meaning"
-            self.query_one("#prompt_label", Label).update(f"Meaning of: {self.kanji}")
+            self.query_one("#prompt_label", Label).update(
+                f"Meaning of: {self.question_data.kanji_word}"
+            )
             event.input.value = ""
 
         elif self.step == "meaning":
@@ -97,18 +97,23 @@ class QuizScreen(Container):
             self.show_results()
 
     def show_results(self) -> None:
+        if not self.question_data:
+            return
+
         self.step = "result"
         self.query_one("#answer_input", Input).disabled = True
 
-        is_kana_correct = self.kana_answer == self.kana
+        is_kana_correct = self.kana_answer == self.question_data.kana_word
         # Simple containment check for meaning or exact match? Let's do simple for now.
-        is_meaning_correct = self.meaning_answer.lower() == self.meaning.lower()
+        is_meaning_correct = (
+            self.meaning_answer.lower() == self.question_data.english_word.lower()
+        )
 
         overall_correct = is_kana_correct and is_meaning_correct
 
         # Record result (logic in db can be expanded)
-        if self.question_data:
-            self.db.record_result(self.question_data[0], overall_correct)
+        if self.question_data.id:
+            self.db.record_result(self.question_data.id, overall_correct)
             if hasattr(self.app, "update_score"):
                 self.app.update_score(overall_correct)
 
@@ -123,14 +128,14 @@ class QuizScreen(Container):
         else:
             parts = []
             if not is_kana_correct:
-                parts.append(f"Reading: {self.kana}")
+                parts.append(f"Reading: {self.question_data.kana_word}")
             if not is_meaning_correct:
-                parts.append(f"Meaning: {self.meaning}")
+                parts.append(f"Meaning: {self.question_data.english_word}")
             result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
 
         self.query_one("#result_message", Static).update(result_text)
 
-        full_info = f"Sentence: {self.eng_sentence}\n({self.kanji} = {self.kana} / {self.meaning})"
+        full_info = f"Sentence: {self.question_data.english_sentence}\n({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
         self.query_one("#full_info", Static).update(full_info)
 
         self.query_one("#footer-buttons").styles.display = "block"
@@ -172,36 +177,32 @@ class QuizScreen(Container):
         self.next_question()
 
     def action_edit_word(self) -> None:
-        if self.step == "result" and self.question_data:
+        if self.step == "result" and self.question_data and self.question_data.id:
             self.app.push_screen(
-                EditWordScreen(self.db, self.question_data[0]), self.on_edit_word_done
+                EditWordScreen(self.db, self.question_data.id), self.on_edit_word_done
             )
 
     def on_edit_word_done(self, changed: bool) -> None:
-        if changed and self.question_data:
+        if changed and self.question_data and self.question_data.id:
             # Reload data
-            word_id = self.question_data[0]
+            word_id = self.question_data.id
             new_data = self.db.get_word(word_id)
             if new_data:
                 self.question_data = new_data
-                (
-                    _,
-                    self.kanji,
-                    self.sentence,
-                    self.kana,
-                    self.meaning,
-                    self.eng_sentence,
-                    self.tag,
-                ) = new_data
 
                 # Refresh display
-                full_info = f"Sentence: {self.eng_sentence}\n({self.kanji} = {self.kana} / {self.meaning})"
+                full_info = f"Sentence: {self.question_data.english_sentence}\n({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
                 self.query_one("#full_info", Static).update(full_info)
-                self.query_one("#sentence_label", Label).update(self.sentence)
+                self.query_one("#sentence_label", Label).update(
+                    self.question_data.japanese_sentence
+                )
 
                 # Re-calculate result message
-                is_kana_correct = self.kana_answer == self.kana
-                is_meaning_correct = self.meaning_answer.lower() == self.meaning.lower()
+                is_kana_correct = self.kana_answer == self.question_data.kana_word
+                is_meaning_correct = (
+                    self.meaning_answer.lower()
+                    == self.question_data.english_word.lower()
+                )
                 overall_correct = is_kana_correct and is_meaning_correct
 
                 result_text = ""
@@ -210,9 +211,9 @@ class QuizScreen(Container):
                 else:
                     parts = []
                     if not is_kana_correct:
-                        parts.append(f"Reading: {self.kana}")
+                        parts.append(f"Reading: {self.question_data.kana_word}")
                     if not is_meaning_correct:
-                        parts.append(f"Meaning: {self.meaning}")
+                        parts.append(f"Meaning: {self.question_data.english_word}")
                     result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
 
                 self.query_one("#result_message", Static).update(result_text)

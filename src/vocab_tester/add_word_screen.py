@@ -2,8 +2,10 @@ from textual.app import ComposeResult
 from textual.containers import Container, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
+from pydantic import ValidationError
 
 from .db import Database
+from .models import Word
 
 
 class AddWordScreen(Screen):
@@ -56,20 +58,18 @@ class AddWordScreen(Screen):
 
         status = self.query_one("#status_message", Static)
 
-        if not all([kanji, kana, english, jp_sentence, en_sentence, tag]):
-            status.update("Error: All fields are required.")
-            status.add_class("error")
-            return
-
         try:
-            self.db.add_word(
-                kanji=kanji,
-                kana=kana,
-                english=english,
-                jp_sentence=jp_sentence,
-                en_sentence=en_sentence,
+            # Validate using Pydantic model
+            word = Word(
+                kanji_word=kanji,
+                kana_word=kana,
+                english_word=english,
+                japanese_sentence=jp_sentence,
+                english_sentence=en_sentence,
                 tag=tag,
             )
+
+            self.db.add_word(word)
             # Clear inputs
             for input_widget in self.query(Input):
                 input_widget.value = ""
@@ -80,6 +80,15 @@ class AddWordScreen(Screen):
 
             # Optionally focus back to top
             self.query_one("#kanji", Input).focus()
+
+        except ValidationError as e:
+            # Extract first error for display
+            err = e.errors()[0]
+            # err['loc'] is a tuple like ('kanji_word',)
+            field = str(err["loc"][0])
+            msg = err["msg"]
+            status.update(f"Error: {field} {msg}")
+            status.add_class("error")
 
         except Exception as e:
             status.update(f"Error saving word: {e}")

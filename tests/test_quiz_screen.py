@@ -1,13 +1,21 @@
 import pytest
 from unittest.mock import MagicMock
 from vocab_tester.quiz_screen import QuizScreen
+from vocab_tester.models import Word
 
 
 # Mock Database
 class MockDatabase:
     def get_random_word(self, tag_filter=None):
-        # return (id, kanji, sentence, kana, meaning, eng_sentence, tag)
-        return (1, "Kanji", "Sentence", "Kana", "Meaning", "EngSentence", "Tag")
+        return Word(
+            id=1,
+            kanji_word="Kanji",
+            japanese_sentence="Sentence",
+            kana_word="Kana",
+            english_word="Meaning",
+            english_sentence="EngSentence",
+            tag="Tag",
+        )
 
     def record_result(self, word_id, correct):
         pass
@@ -43,25 +51,14 @@ def test_queue_initialization(screen):
     screen.next_question()
     # Logic: fills to 10, pops 1 -> 9 left
     assert len(screen.queue) == 9
-    assert screen.question_data == (
-        1,
-        "Kanji",
-        "Sentence",
-        "Kana",
-        "Meaning",
-        "EngSentence",
-        "Tag",
-    )
+    assert isinstance(screen.question_data, Word)
+    assert screen.question_data.kanji_word == "Kanji"
 
 
 def test_incorrect_answer_requeues(screen):
     """Test that incorrect answers are re-inserted into the queue."""
     screen.next_question()
     initial_word = screen.question_data
-
-    # Simulate setup
-    screen.kana = "Kana"
-    screen.meaning = "Meaning"
 
     # Input incorrect answers
     screen.kana_answer = "Wrong"
@@ -84,9 +81,6 @@ def test_incorrect_answer_requeues(screen):
 def test_correct_answer_does_not_requeue(screen):
     """Test that correct answers are NOT re-inserted."""
     screen.next_question()
-
-    screen.kana = "Kana"
-    screen.meaning = "Meaning"
 
     screen.kana_answer = "Kana"
     screen.meaning_answer = "Meaning"  # Case insensitive check in code

@@ -2,8 +2,10 @@ from textual.app import ComposeResult
 from textual.containers import Container, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
+from pydantic import ValidationError
 
 from .db import Database
+from .models import Word
 
 
 class EditWordScreen(Screen):
@@ -44,15 +46,12 @@ class EditWordScreen(Screen):
     def on_mount(self) -> None:
         word = self.db.get_word(self.word_id)
         if word:
-            # word schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag
-            _, kanji, jp_sentence, kana, english, en_sentence, tag = word
-
-            self.query_one("#kanji", Input).value = kanji
-            self.query_one("#kana", Input).value = kana
-            self.query_one("#english", Input).value = english
-            self.query_one("#jp_sentence", Input).value = jp_sentence
-            self.query_one("#en_sentence", Input).value = en_sentence
-            self.query_one("#tag", Input).value = tag
+            self.query_one("#kanji", Input).value = word.kanji_word
+            self.query_one("#kana", Input).value = word.kana_word
+            self.query_one("#english", Input).value = word.english_word
+            self.query_one("#jp_sentence", Input).value = word.japanese_sentence
+            self.query_one("#en_sentence", Input).value = word.english_sentence
+            self.query_one("#tag", Input).value = word.tag
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel_btn":
@@ -70,22 +69,28 @@ class EditWordScreen(Screen):
 
         status = self.query_one("#status_message", Static)
 
-        if not all([kanji, kana, english, jp_sentence, en_sentence, tag]):
-            status.update("Error: All fields are required.")
-            status.add_class("error")
-            return
-
         try:
-            self.db.update_word(
-                word_id=self.word_id,
-                kanji=kanji,
-                kana=kana,
-                english=english,
-                jp_sentence=jp_sentence,
-                en_sentence=en_sentence,
+            # Validate using Pydantic model
+            word = Word(
+                kanji_word=kanji,
+                kana_word=kana,
+                english_word=english,
+                japanese_sentence=jp_sentence,
+                english_sentence=en_sentence,
                 tag=tag,
             )
+
+            word.id = self.word_id
+            self.db.update_word(word)
             self.dismiss(True)
+
+        except ValidationError as e:
+            # Extract first error for display
+            err = e.errors()[0]
+            field = str(err["loc"][0])
+            msg = err["msg"]
+            status.update(f"Error: {field} {msg}")
+            status.add_class("error")
 
         except Exception as e:
             status.update(f"Error updating word: {e}")
