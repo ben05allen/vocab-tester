@@ -13,7 +13,7 @@ Screen {
 Label {
     width: 100%;
     text-align: center;
-    margin-bottom: 1;
+    margin-bottom: 0;
 }
 
 .sentence {
@@ -27,7 +27,7 @@ Label {
 }
 
 Input {
-    margin: 1 0;
+    margin: 0 0 1 0;
 }
 
 .result-correct {
@@ -63,8 +63,10 @@ Button {
 /* Add Word Screen Styles */
 
 #add_word_container {
+    layout: vertical;
     width: 60%;
     height: auto;
+    max-height: 90%;
     border: solid $accent;
     padding: 1 2;
     background: $surface;
@@ -80,6 +82,7 @@ Button {
 }
 
 #form_inputs {
+    height: auto;
     margin-bottom: 2;
 }
 

@@ -16,9 +16,9 @@ A Terminal User Interface (TUI) application built with Textual to help users pra
 When helping me write code, please adhere to these commands:
 
 - Ensure that new features are developed in a git branch separate from the main (or master) branch
-- Environment Setup: uv sync
+- Environment Setup: `uv sync`
 - Running the App: `uv run vocab-tester` (once entry points are defined)
-- Linting: uv run ruff check .
+- Linting: `uv run ruff check --fix && uv ruff format .`
 - Pre-commit: Hooks are managed via prek.
 
 ## 🗄 Database Schema
@@ -37,3 +37,4 @@ The database schema is record in `ref/sqlite3-schema.txt`
 1. Always prefer `| None` over `Optional[]`
 1. Ruff: Ensure all code passes ruff default rules (no unused imports, proper spacing). Autofix any ruff checks by using the `--fix` flag and keep code formatted by running `ruff format`. This is also enforced by a pre-commit hook.
 1. When adding new functionality ensure that appropriate pytest tests are added as well.
+1. Only run `git add` or `git commit` commands if explicitly asked to do so, otherwise leave it to the human in the loop.
