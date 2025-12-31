@@ -6,11 +6,11 @@ from vocab_tester.quiz_screen import QuizScreen
 class MockDatabase:
     def get_word(self, word_id):
         if word_id == 1:
-            return (1, "NewKanji", "NewJP", "NewKana", "NewEng", "NewEN")
+            return (1, "NewKanji", "NewJP", "NewKana", "NewEng", "NewEN", "NewTag")
         return None
 
     def get_random_word(self):
-        return (1, "OldKanji", "OldJP", "OldKana", "OldEng", "OldEN")
+        return (1, "OldKanji", "OldJP", "OldKana", "OldEng", "OldEN", "OldTag")
 
     def record_result(self, *args):
         pass
@@ -42,7 +42,7 @@ def screen():
 
 def test_action_edit_word_pushes_screen(screen):
     screen.step = "result"
-    screen.question_data = (1, "Kanji", "JP", "Kana", "Eng", "EnSent")
+    screen.question_data = (1, "Kanji", "JP", "Kana", "Eng", "EnSent", "Tag")
 
     screen.action_edit_word()
 
@@ -53,7 +53,15 @@ def test_action_edit_word_pushes_screen(screen):
 
 
 def test_on_edit_word_done_refreshes_data(screen):
-    screen.question_data = (1, "OldKanji", "OldJP", "OldKana", "OldEng", "OldEN")
+    screen.question_data = (
+        1,
+        "OldKanji",
+        "OldJP",
+        "OldKana",
+        "OldEng",
+        "OldEN",
+        "OldTag",
+    )
     # Simulate editing done with changes
     screen.on_edit_word_done(True)
 
@@ -65,6 +73,7 @@ def test_on_edit_word_done_refreshes_data(screen):
         "NewKana",
         "NewEng",
         "NewEN",
+        "NewTag",
     )
     assert screen.kanji == "NewKanji"
 

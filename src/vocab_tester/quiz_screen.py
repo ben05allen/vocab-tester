@@ -50,10 +50,16 @@ class QuizScreen(Container):
             return
 
         self.question_data = self.queue.pop(0)
-        # question_data: (id, kanji, sentence, kana, meaning, eng_sentence)
-        _, self.kanji, self.sentence, self.kana, self.meaning, self.eng_sentence = (
-            self.question_data
-        )
+        # question_data: (id, kanji, sentence, kana, meaning, eng_sentence, tag)
+        (
+            _,
+            self.kanji,
+            self.sentence,
+            self.kana,
+            self.meaning,
+            self.eng_sentence,
+            self.tag,
+        ) = self.question_data
 
         self.step = "kana"
         self.kana_answer = ""
@@ -150,6 +156,7 @@ class QuizScreen(Container):
                     self.kana,
                     self.meaning,
                     self.eng_sentence,
+                    self.tag,
                 ) = new_data
 
                 # Refresh display

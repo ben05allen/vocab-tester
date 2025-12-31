@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 
-type WordEntry = tuple[int, str, str, str, str, str]
+type WordEntry = tuple[int, str, str, str, str, str, str]
 
 DB_PATH = Path("data/vocab.db")
 SCHEMA_PATH = Path("ref/sqlite3-schema.txt")
@@ -49,6 +49,7 @@ class Database:
                 "がっこう",
                 "school",
                 "I go to school every day.",
+                "noun",
             ),
             (
                 "猫",
@@ -56,14 +57,16 @@ class Database:
                 "ねこ",
                 "cat",
                 "The cat is sleeping on the bed.",
+                "noun",
             ),
-            ("食べる", "朝ご飯を食べる。", "たべる", "eat", "I eat breakfast."),
+            ("食べる", "朝ご飯を食べる。", "たべる", "eat", "I eat breakfast.", "verb"),
             (
                 "勉強",
                 "日本語を勉強しています。",
                 "べんきょう",
                 "study",
                 "I am studying Japanese.",
+                "verb",
             ),
             (
                 "食べる",
@@ -71,6 +74,7 @@ class Database:
                 "たべる",
                 "eat",
                 "I eat one apple every day.",
+                "verb",
             ),
             (
                 "日本語",
@@ -78,6 +82,7 @@ class Database:
                 "にほんご",
                 "Japanesee",
                 "Studying Japanese is very fun.",
+                "noun",
             ),
             (
                 "先生",
@@ -85,6 +90,7 @@ class Database:
                 "せんせい",
                 "teacher",
                 "That person is my university teacher.",
+                "noun",
             ),
             (
                 "行く",
@@ -92,6 +98,7 @@ class Database:
                 "いく",
                 "go",
                 "I am going to the movie theater with a friend tomorrow.",
+                "verb",
             ),
             (
                 "読む",
@@ -99,6 +106,7 @@ class Database:
                 "よむ",
                 "read",
                 "I always read a book before going to bed.",
+                "verb",
             ),
             (
                 "水",
@@ -106,6 +114,7 @@ class Database:
                 "みず",
                 "water",
                 "I want to drink cold water.",
+                "noun",
             ),
             (
                 "友達",
@@ -113,6 +122,7 @@ class Database:
                 "ともだち",
                 "friend",
                 "I played at the park with my friend on the weekend.",
+                "noun",
             ),
             (
                 "天気",
@@ -120,6 +130,7 @@ class Database:
                 "てんき",
                 "weather",
                 "The weather is very nice today, isn't it?",
+                "noun",
             ),
             (
                 "新しい",
@@ -127,6 +138,7 @@ class Database:
                 "あたらしい",
                 "new",
                 "I bought new shoes last week.",
+                "adjective",
             ),
             (
                 "時間",
@@ -134,6 +146,7 @@ class Database:
                 "じかん",
                 "time",
                 "There is still time until the appointment.",
+                "noun",
             ),
             (
                 "見る",
@@ -141,6 +154,7 @@ class Database:
                 "みる",
                 "watch",
                 "I watched an interesting TV program yesterday.",
+                "verb",
             ),
             (
                 "会社",
@@ -148,11 +162,12 @@ class Database:
                 "かいしゃ",
                 "company",
                 "My father works for a large company.",
+                "noun",
             ),
         ]
         cur = con.cursor()
         cur.executemany(
-            "INSERT INTO words (kanji_word, japanese_sentence, kana_word, english_word, english_sentence) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO words (kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag) VALUES (?, ?, ?, ?, ?, ?)",
             samples,
         )
         con.commit()
@@ -160,7 +175,7 @@ class Database:
     def get_random_word(self) -> WordEntry | None:
         """
         Returns a random word tuple:
-        (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence)
+        (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag)
         """
         con = self.get_connection()
         cur = con.cursor()
@@ -173,7 +188,7 @@ class Database:
     def get_word(self, word_id: int) -> WordEntry | None:
         """
         Returns a word tuple by ID:
-        (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence)
+        (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag)
         """
         con = self.get_connection()
         cur = con.cursor()
@@ -190,13 +205,14 @@ class Database:
         english: str,
         jp_sentence: str,
         en_sentence: str,
+        tag: str,
     ) -> None:
         """Updates an existing word in the database."""
         con = self.get_connection()
         cur = con.cursor()
         cur.execute(
-            "UPDATE words SET kanji_word=?, kana_word=?, english_word=?, japanese_sentence=?, english_sentence=? WHERE id=?",
-            (kanji, kana, english, jp_sentence, en_sentence, word_id),
+            "UPDATE words SET kanji_word=?, kana_word=?, english_word=?, japanese_sentence=?, english_sentence=?, tag=? WHERE id=?",
+            (kanji, kana, english, jp_sentence, en_sentence, tag, word_id),
         )
         con.commit()
         con.close()
@@ -208,13 +224,14 @@ class Database:
         english: str,
         jp_sentence: str,
         en_sentence: str,
+        tag: str,
     ) -> None:
         """Adds a new word to the database."""
         con = self.get_connection()
         cur = con.cursor()
         cur.execute(
-            "INSERT INTO words (kanji_word, kana_word, english_word, japanese_sentence, english_sentence) VALUES (?, ?, ?, ?, ?)",
-            (kanji, kana, english, jp_sentence, en_sentence),
+            "INSERT INTO words (kanji_word, kana_word, english_word, japanese_sentence, english_sentence, tag) VALUES (?, ?, ?, ?, ?, ?)",
+            (kanji, kana, english, jp_sentence, en_sentence, tag),
         )
         con.commit()
         con.close()

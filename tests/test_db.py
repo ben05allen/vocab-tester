@@ -44,7 +44,7 @@ def test_get_random_word(temp_db):
     """Test fetching a random word."""
     word = temp_db.get_random_word()
     assert word is not None
-    assert len(word) == 6  # (id, kanji, sentence, kana, meaning, eng_sentence)
+    assert len(word) == 7  # (id, kanji, sentence, kana, meaning, eng_sentence, tag)
 
 
 def test_record_result(temp_db):
@@ -79,8 +79,9 @@ def test_add_word(temp_db):
     english = "test"
     jp_sentence = "これはテストです。"
     en_sentence = "This is a test."
+    tag = "noun"
 
-    temp_db.add_word(kanji, kana, english, jp_sentence, en_sentence)
+    temp_db.add_word(kanji, kana, english, jp_sentence, en_sentence, tag)
 
     con = temp_db.get_connection()
     cur = con.cursor()
@@ -92,9 +93,10 @@ def test_add_word(temp_db):
     con.close()
 
     assert row is not None
-    # schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence
+    # schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag
     assert row[1] == kanji
     assert row[2] == jp_sentence
     assert row[3] == kana
     assert row[4] == english
     assert row[5] == en_sentence
+    assert row[6] == tag

@@ -27,6 +27,8 @@ class AddWordScreen(Screen):
                 Input(placeholder="e.g. 私は毎日学校に行きます。", id="jp_sentence"),
                 Label("English Sentence"),
                 Input(placeholder="e.g. I go to school every day.", id="en_sentence"),
+                Label("Tag"),
+                Input(placeholder="e.g. noun", id="tag"),
                 id="form_inputs",
             ),
             Container(
@@ -50,10 +52,11 @@ class AddWordScreen(Screen):
         english = self.query_one("#english", Input).value.strip()
         jp_sentence = self.query_one("#jp_sentence", Input).value.strip()
         en_sentence = self.query_one("#en_sentence", Input).value.strip()
+        tag = self.query_one("#tag", Input).value.strip()
 
         status = self.query_one("#status_message", Static)
 
-        if not all([kanji, kana, english, jp_sentence, en_sentence]):
+        if not all([kanji, kana, english, jp_sentence, en_sentence, tag]):
             status.update("Error: All fields are required.")
             status.add_class("error")
             return
@@ -65,6 +68,7 @@ class AddWordScreen(Screen):
                 english=english,
                 jp_sentence=jp_sentence,
                 en_sentence=en_sentence,
+                tag=tag,
             )
             # Clear inputs
             for input_widget in self.query(Input):

@@ -28,6 +28,8 @@ class EditWordScreen(Screen):
                 Input(id="jp_sentence"),
                 Label("English Sentence"),
                 Input(id="en_sentence"),
+                Label("Tag"),
+                Input(id="tag"),
                 id="form_inputs",
             ),
             Container(
@@ -42,14 +44,15 @@ class EditWordScreen(Screen):
     def on_mount(self) -> None:
         word = self.db.get_word(self.word_id)
         if word:
-            # word schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence
-            _, kanji, jp_sentence, kana, english, en_sentence = word
+            # word schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag
+            _, kanji, jp_sentence, kana, english, en_sentence, tag = word
 
             self.query_one("#kanji", Input).value = kanji
             self.query_one("#kana", Input).value = kana
             self.query_one("#english", Input).value = english
             self.query_one("#jp_sentence", Input).value = jp_sentence
             self.query_one("#en_sentence", Input).value = en_sentence
+            self.query_one("#tag", Input).value = tag
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel_btn":
@@ -63,10 +66,11 @@ class EditWordScreen(Screen):
         english = self.query_one("#english", Input).value.strip()
         jp_sentence = self.query_one("#jp_sentence", Input).value.strip()
         en_sentence = self.query_one("#en_sentence", Input).value.strip()
+        tag = self.query_one("#tag", Input).value.strip()
 
         status = self.query_one("#status_message", Static)
 
-        if not all([kanji, kana, english, jp_sentence, en_sentence]):
+        if not all([kanji, kana, english, jp_sentence, en_sentence, tag]):
             status.update("Error: All fields are required.")
             status.add_class("error")
             return
@@ -79,6 +83,7 @@ class EditWordScreen(Screen):
                 english=english,
                 jp_sentence=jp_sentence,
                 en_sentence=en_sentence,
+                tag=tag,
             )
             self.dismiss(True)
 

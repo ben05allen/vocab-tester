@@ -6,8 +6,8 @@ from vocab_tester.quiz_screen import QuizScreen
 # Mock Database
 class MockDatabase:
     def get_random_word(self):
-        # return (id, kanji, sentence, kana, meaning, eng_sentence)
-        return (1, "Kanji", "Sentence", "Kana", "Meaning", "EngSentence")
+        # return (id, kanji, sentence, kana, meaning, eng_sentence, tag)
+        return (1, "Kanji", "Sentence", "Kana", "Meaning", "EngSentence", "Tag")
 
     def record_result(self, word_id, correct):
         pass
@@ -50,6 +50,7 @@ def test_queue_initialization(screen):
         "Kana",
         "Meaning",
         "EngSentence",
+        "Tag",
     )
 
 

@@ -4,7 +4,8 @@ kanji_word TEXT,
 japanese_sentence TEXT,
 kana_word TEXT,
 english_word TEXT, 
-english_sentence TEXT);
+english_sentence TEXT,
+tag TEXT NOT NULL);
 CREATE TABLE last_tested (
 id INTEGER PRIMARY KEY,
 word_id INTEGER,
