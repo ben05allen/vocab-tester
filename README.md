@@ -73,6 +73,20 @@ uv run vocab-tester
 3. **Pre-commit Hooks:**
    This project uses `prek` to manage git hooks. Hooks are configured to run linting and formatting checks automatically to maintain code quality.
 
+## 🙏 Acknowledgements
+
+This project stands on the shoulders of several fantastic open-source libraries:
+
+- **[Textualize](https://github.com/Textualize/textual)**: Powering the beautiful terminal interface.
+- **[Pydantic](https://github.com/pydantic/pydantic)**: Handling robust data validation and modeling.
+- **[pytest](https://github.com/pytest-dev/pytest)**: Ensuring the reliability of our codebase through testing.
+
+If you find this application useful, please consider contributing to or supporting these incredible projects.
+
+### 🤖 Built with Gemini
+
+The vast majority of this application's code and architectural refactors were generated and implemented by **Gemini**, demonstrating the power of AI-assisted software engineering.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
