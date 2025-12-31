@@ -205,9 +205,10 @@ class Database:
         english: str,
         jp_sentence: str,
         en_sentence: str,
-        tag: str,
+        tag: str = "none",
     ) -> None:
         """Updates an existing word in the database."""
+        tag = tag.strip() or "none"
         con = self.get_connection()
         cur = con.cursor()
         cur.execute(
@@ -224,9 +225,10 @@ class Database:
         english: str,
         jp_sentence: str,
         en_sentence: str,
-        tag: str,
+        tag: str = "none",
     ) -> None:
         """Adds a new word to the database."""
+        tag = tag.strip() or "none"
         con = self.get_connection()
         cur = con.cursor()
         cur.execute(
