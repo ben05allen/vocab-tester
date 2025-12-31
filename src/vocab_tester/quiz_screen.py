@@ -4,6 +4,7 @@ from textual.widgets import Static, Input, Button, Label
 from textual.reactive import reactive
 from .db import Database
 from .edit_word_screen import EditWordScreen
+from .tag_screen import TagSelectionScreen
 
 
 class QuizScreen(Container):
@@ -19,9 +20,11 @@ class QuizScreen(Container):
         self.question_data = None
         self.kana_answer = ""
         self.meaning_answer = ""
+        self.current_tag_filter = None
 
     def compose(self) -> ComposeResult:
         with Container(id="container"):
+            yield Label("Filter: All", id="filter_label")
             yield Label("", id="sentence_label", classes="sentence")
             yield Label("", id="prompt_label", classes="prompt")
             yield Input(placeholder="Type answer here...", id="answer_input")
@@ -32,6 +35,7 @@ class QuizScreen(Container):
 
             with Horizontal(id="footer-buttons"):
                 yield Button("Next", variant="primary", id="next_btn")
+                yield Button("Filter", variant="default", id="filter_btn")
                 yield Button("Quit", variant="error", id="quit_btn")
 
     def on_mount(self) -> None:
@@ -39,13 +43,15 @@ class QuizScreen(Container):
 
     def next_question(self) -> None:
         while len(self.queue) < 10:
-            word = self.db.get_random_word()
+            word = self.db.get_random_word(self.current_tag_filter)
             if not word:
                 break
             self.queue.append(word)
 
         if not self.queue:
-            self.query_one("#sentence_label", Label).update("No words in database!")
+            self.query_one("#sentence_label", Label).update(
+                "No words found for this filter!"
+            )
             self.query_one("#answer_input", Input).disabled = True
             return
 
@@ -135,6 +141,35 @@ class QuizScreen(Container):
             self.next_question()
         elif event.button.id == "quit_btn":
             self.app.exit()
+        elif event.button.id == "filter_btn":
+            self.app.push_screen(TagSelectionScreen(self.db), self.on_filter_selected)
+
+    def on_filter_selected(self, tag: str | None) -> None:
+        if tag is None:
+            # Cancelled, do nothing
+            return
+
+        # Tag is either a string or "" (empty string for All)
+        self.current_tag_filter = tag if tag else None
+
+        # Update label
+        label_text = (
+            f"Filter: {self.current_tag_filter}"
+            if self.current_tag_filter
+            else "Filter: All"
+        )
+        self.query_one("#filter_label", Label).update(label_text)
+
+        # Clear queue and get new questions
+        self.queue.clear()
+
+        # Reset UI state (hide result buttons, clear inputs)
+        self.query_one("#answer_input", Input).disabled = False
+        self.query_one("#result_message", Static).update("")
+        self.query_one("#full_info", Static).update("")
+        self.query_one("#footer-buttons").styles.display = "none"
+
+        self.next_question()
 
     def action_edit_word(self) -> None:
         if self.step == "result" and self.question_data:

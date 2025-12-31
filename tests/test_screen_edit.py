@@ -9,7 +9,7 @@ class MockDatabase:
             return (1, "NewKanji", "NewJP", "NewKana", "NewEng", "NewEN", "NewTag")
         return None
 
-    def get_random_word(self):
+    def get_random_word(self, tag_filter=None):
         return (1, "OldKanji", "OldJP", "OldKana", "OldEng", "OldEN", "OldTag")
 
     def record_result(self, *args):

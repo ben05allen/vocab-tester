@@ -100,3 +100,79 @@ def test_add_word(temp_db):
     assert row[4] == english
     assert row[5] == en_sentence
     assert row[6] == tag
+
+
+def test_add_word_tag_fallback(temp_db):
+    """Test that tag falls back to 'none' if empty."""
+    kanji = "Fallback"
+    kana = "fallback"
+    english = "fallback"
+    jp_sentence = "fallback"
+    en_sentence = "fallback"
+
+    # Pass empty string for tag
+    temp_db.add_word(kanji, kana, english, jp_sentence, en_sentence, tag="")
+
+    con = temp_db.get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT tag FROM words WHERE kanji_word = ?", (kanji,))
+    tag = cur.fetchone()[0]
+    con.close()
+
+    assert tag == "none"
+
+
+def test_get_tags_ordering(temp_db):
+    """Test that tags are returned ordered by most recent word ID."""
+    # Clear seeded data
+    con = temp_db.get_connection()
+    cur = con.cursor()
+    cur.execute("DELETE FROM words")
+    con.commit()
+    con.close()
+
+    # Add words with different tags
+    # Word 1: Tag A
+    temp_db.add_word("W1", "w1", "w1", "s1", "s1", "TagA")
+    # Word 2: Tag B
+    temp_db.add_word("W2", "w2", "w2", "s2", "s2", "TagB")
+    # Word 3: Tag A again
+    temp_db.add_word("W3", "w3", "w3", "s3", "s3", "TagA")
+
+    # TagA max ID is associated with the latest entry.
+    # Order should be TagA, TagB because TagA was used last.
+
+    tags = temp_db.get_tags()
+    assert tags == ["TagA", "TagB"]
+
+    # Add Word 4: Tag C
+    temp_db.add_word("W4", "w4", "w4", "s4", "s4", "TagC")
+    # Order should be TagC (4), TagA (3), TagB (2)
+    tags = temp_db.get_tags()
+    assert tags == ["TagC", "TagA", "TagB"]
+
+    # Add Word 5: Tag B again
+    temp_db.add_word("W5", "w5", "w5", "s5", "s5", "TagB")
+    # Order should be TagB (5), TagC (4), TagA (3)
+    tags = temp_db.get_tags()
+    assert tags == ["TagB", "TagC", "TagA"]
+
+
+def test_get_random_word_filtered(temp_db):
+    """Test filtering random words by tag."""
+    temp_db.add_word("WA", "wa", "wa", "sa", "sa", "TagA")
+    temp_db.add_word("WB", "wb", "wb", "sb", "sb", "TagB")
+
+    # Filter for TagA
+    word = temp_db.get_random_word(tag_filter="TagA")
+    assert word is not None
+    assert word[6] == "TagA"
+
+    # Filter for TagB
+    word = temp_db.get_random_word(tag_filter="TagB")
+    assert word is not None
+    assert word[6] == "TagB"
+
+    # Filter for non-existent tag
+    word = temp_db.get_random_word(tag_filter="NonExistent")
+    assert word is None

@@ -104,3 +104,30 @@ Button {
 .success {
     color: $success;
 }
+
+/* Tag Screen Styles */
+#tag_selection_container {
+    width: 50%;
+    height: 60%;
+    border: solid $primary;
+    background: $surface;
+    padding: 1 2;
+    align: center middle;
+}
+
+#tag_list {
+    height: 1fr;
+    border: solid $secondary;
+    margin: 1 0;
+}
+
+.tag-button {
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#filter_label {
+    text-align: right;
+    color: $secondary;
+    margin-bottom: 1;
+}

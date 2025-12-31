@@ -5,7 +5,7 @@ from vocab_tester.quiz_screen import QuizScreen
 
 # Mock Database
 class MockDatabase:
-    def get_random_word(self):
+    def get_random_word(self, tag_filter=None):
         # return (id, kanji, sentence, kana, meaning, eng_sentence, tag)
         return (1, "Kanji", "Sentence", "Kana", "Meaning", "EngSentence", "Tag")
 
@@ -96,5 +96,25 @@ def test_correct_answer_does_not_requeue(screen):
     # Queue size should remain 9 (or technically, it might not change,
     # but specifically it shouldn't grow by 2)
     # Actually, next_question pops one, so we are at 9.
+    assert len(screen.queue) == 9
     # Show results just records. It doesn't pop new one yet.
     assert len(screen.queue) == 9
+
+
+def test_filter_tag_updates_queue(screen):
+    """Test that applying a filter clears queue and requests filtered words."""
+    screen.on_filter_selected("SomeTag")
+
+    assert screen.current_tag_filter == "SomeTag"
+    # Queue should be cleared and refilled.
+    # MockDatabase.get_random_word signature needs update in this file first probably.
+    assert len(screen.queue) == 9  # It refills to 10 then pops 1
+    screen.query_one("#filter_label").update.assert_called_with("Filter: SomeTag")
+
+
+def test_filter_clear(screen):
+    screen.current_tag_filter = "OldTag"
+    screen.on_filter_selected("")  # Clear
+
+    assert screen.current_tag_filter is None
+    screen.query_one("#filter_label").update.assert_called_with("Filter: All")

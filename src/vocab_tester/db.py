@@ -172,18 +172,38 @@ class Database:
         )
         con.commit()
 
-    def get_random_word(self) -> WordEntry | None:
+    def get_random_word(self, tag_filter: str | None = None) -> WordEntry | None:
         """
         Returns a random word tuple:
         (id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag)
         """
         con = self.get_connection()
         cur = con.cursor()
-        # Simple random selection for now
-        cur.execute("SELECT * FROM words ORDER BY RANDOM() LIMIT 1")
+
+        if tag_filter:
+            cur.execute(
+                "SELECT * FROM words WHERE tag = ? ORDER BY RANDOM() LIMIT 1",
+                (tag_filter,),
+            )
+        else:
+            cur.execute("SELECT * FROM words ORDER BY RANDOM() LIMIT 1")
+
         row = cur.fetchone()
         con.close()
         return row
+
+    def get_tags(self) -> list[str]:
+        """
+        Returns a list of all unique tags, ordered by the ID of the most recent word using that tag.
+        """
+        con = self.get_connection()
+        cur = con.cursor()
+        cur.execute(
+            "SELECT tag, MAX(id) as max_id FROM words GROUP BY tag ORDER BY max_id DESC"
+        )
+        rows = cur.fetchall()
+        con.close()
+        return [row[0] for row in rows]
 
     def get_word(self, word_id: int) -> WordEntry | None:
         """
