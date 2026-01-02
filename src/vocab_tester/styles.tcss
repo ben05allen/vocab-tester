@@ -86,6 +86,21 @@ Button {
     margin-bottom: 2;
 }
 
+#kanji_row {
+    height: auto;
+    width: 100%;
+}
+
+#kanji_row Input {
+    width: 1fr;
+}
+
+#kanji_row Button {
+    width: auto;
+    margin-top: 0;
+    margin-bottom: 1;
+}
+
 #form_buttons {
     layout: horizontal;
     align: center middle;

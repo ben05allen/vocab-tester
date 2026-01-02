@@ -1,11 +1,14 @@
+import asyncio
+from textual import work
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, Horizontal
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
 from pydantic import ValidationError
 
 from .db import Database
 from .models import Word
+from .ai_service import AIService, AIServiceError
 
 
 class AddWordScreen(Screen):
@@ -14,13 +17,21 @@ class AddWordScreen(Screen):
     def __init__(self, db: Database):
         super().__init__()
         self.db = db
+        try:
+            self.ai_service = AIService()
+        except AIServiceError:
+            self.ai_service = None
 
     def compose(self) -> ComposeResult:
         yield Container(
             Label("Add New Word", id="add_word_title"),
             Vertical(
                 Label("Kanji Word"),
-                Input(placeholder="e.g. 学校", id="kanji"),
+                Horizontal(
+                    Input(placeholder="e.g. 学校", id="kanji"),
+                    Button("Generate", variant="default", id="generate_btn"),
+                    id="kanji_row",
+                ),
                 Label("Kana Word"),
                 Input(placeholder="e.g. がっこう", id="kana"),
                 Label("English Word"),
@@ -47,6 +58,50 @@ class AddWordScreen(Screen):
             self.app.pop_screen()
         elif event.button.id == "save_btn":
             self.save_word()
+        elif event.button.id == "generate_btn":
+            self.generate_ai_data()
+
+    @work(exclusive=True)
+    async def generate_ai_data(self) -> None:
+        kanji = self.query_one("#kanji", Input).value.strip()
+        status = self.query_one("#status_message", Static)
+
+        if not self.ai_service:
+            status.update("AI Service not available (check API_KEY)")
+            status.add_class("error")
+            return
+
+        if not kanji:
+            status.update("Please enter a Kanji word first")
+            status.add_class("error")
+            return
+
+        status.update("Generating data with AI...")
+        status.remove_class("error")
+        status.remove_class("success")
+
+        generate_btn = self.query_one("#generate_btn", Button)
+        generate_btn.disabled = True
+
+        try:
+            # Use asyncio.to_thread for the synchronous AI call
+            data = await asyncio.to_thread(self.ai_service.generate_word_data, kanji)
+
+            self.query_one("#kana", Input).value = data.kana_word
+            self.query_one("#english", Input).value = data.english_word
+            self.query_one("#jp_sentence", Input).value = data.japanese_sentence
+            self.query_one("#en_sentence", Input).value = data.english_sentence
+
+            status.update("Data generated successfully!")
+            status.add_class("success")
+        except AIServiceError as e:
+            status.update(f"AI Error: {str(e)}")
+            status.add_class("error")
+        except Exception as e:
+            status.update(f"Unexpected error: {str(e)}")
+            status.add_class("error")
+        finally:
+            generate_btn.disabled = False
 
     def save_word(self) -> None:
         kanji = self.query_one("#kanji", Input).value.strip()
