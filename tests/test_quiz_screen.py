@@ -26,6 +26,7 @@ class MockQuizScreen(QuizScreen):
     def __init__(self, db):
         super().__init__(db)
         self._mocks = {}
+        self.app_mock = MagicMock()
 
     def query_one(self, selector, type=None):
         if selector not in self._mocks:
@@ -37,7 +38,7 @@ class MockQuizScreen(QuizScreen):
 
     @property
     def app(self):
-        return MagicMock()
+        return self.app_mock
 
 
 @pytest.fixture
@@ -112,3 +113,14 @@ def test_filter_clear(screen):
 
     assert screen.current_tag_filter is None
     screen.query_one("#filter_label").update.assert_called_with("Filter: All")
+
+
+def test_copy_button_press(screen):
+    screen.next_question()
+    # Mock event
+    event = MagicMock()
+    event.button.id = "copy_btn"
+
+    screen.on_button_pressed(event)
+
+    screen.app.copy_to_clipboard.assert_called_with("Sentence")

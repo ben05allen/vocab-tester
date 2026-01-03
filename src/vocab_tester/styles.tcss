@@ -16,6 +16,23 @@ Label {
     margin-bottom: 0;
 }
 
+#sentence_row {
+    height: auto;
+    width: 100%;
+    align: center middle;
+}
+
+#sentence_label {
+    width: auto;
+    text-align: center;
+}
+
+#copy_btn {
+    width: auto;
+    min-width: 4;
+    margin-left: 1;
+}
+
 .sentence {
     text-style: bold;
     color: $text;

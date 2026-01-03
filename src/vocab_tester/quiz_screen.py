@@ -26,7 +26,9 @@ class QuizScreen(Container):
     def compose(self) -> ComposeResult:
         with Container(id="container"):
             yield Label("Filter: All", id="filter_label")
-            yield Label("", id="sentence_label", classes="sentence")
+            with Horizontal(id="sentence_row"):
+                yield Label("", id="sentence_label", classes="sentence")
+                yield Button("📔", id="copy_btn", variant="default", classes="hidden")
             yield Label("", id="prompt_label", classes="prompt")
             yield Input(placeholder="Type answer here...", id="answer_input")
 
@@ -77,6 +79,7 @@ class QuizScreen(Container):
         self.query_one("#result_message", Static).update("")
         self.query_one("#full_info", Static).update("")
         self.query_one("#footer-buttons").styles.display = "none"
+        self.query_one("#copy_btn").add_class("hidden")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if not self.question_data:
@@ -139,6 +142,7 @@ class QuizScreen(Container):
         self.query_one("#full_info", Static).update(full_info)
 
         self.query_one("#footer-buttons").styles.display = "block"
+        self.query_one("#copy_btn").remove_class("hidden")
         self.query_one("#next_btn").focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -148,6 +152,9 @@ class QuizScreen(Container):
             self.app.exit()
         elif event.button.id == "filter_btn":
             self.app.push_screen(TagSelectionScreen(self.db), self.on_filter_selected)
+        elif event.button.id == "copy_btn":
+            if self.question_data:
+                self.app.copy_to_clipboard(self.question_data.japanese_sentence)
 
     def on_filter_selected(self, tag: str | None) -> None:
         if tag is None:
@@ -173,6 +180,7 @@ class QuizScreen(Container):
         self.query_one("#result_message", Static).update("")
         self.query_one("#full_info", Static).update("")
         self.query_one("#footer-buttons").styles.display = "none"
+        self.query_one("#copy_btn").add_class("hidden")
 
         self.next_question()
 

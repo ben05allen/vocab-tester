@@ -1,3 +1,5 @@
+import shutil
+import subprocess
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer
 from .db import Database
@@ -29,14 +31,60 @@ class VocabTesterApp(App):
             self.score_correct += 1
         self.update_score_display()
 
+    def copy_to_clipboard(self, text: str) -> None:
+        """Override to support WSL2 clipboard with UTF-8 support."""
+        # 1. Try PowerShell (Best for UTF-8/Japanese support)
+        if shutil.which("powershell.exe"):
+            try:
+                # Use MemoryStream to read bytes from stdin safely
+                full_command = (
+                    "$ms = New-Object System.IO.MemoryStream; "
+                    "[Console]::OpenStandardInput().CopyTo($ms); "
+                    "$text = [System.Text.Encoding]::UTF8.GetString($ms.ToArray()); "
+                    "Set-Clipboard -Value $text"
+                )
+
+                process = subprocess.Popen(
+                    [
+                        "powershell.exe",
+                        "-NoProfile",
+                        "-NonInteractive",
+                        "-Command",
+                        full_command,
+                    ],
+                    stdin=subprocess.PIPE,
+                    close_fds=True,
+                )
+                process.communicate(input=text.encode("utf-8"))
+                if process.returncode == 0:
+                    self.notify("Copied to clipboard (WSL)!")
+                    return
+            except Exception:
+                pass
+
+        # 2. Try clip.exe (Standard WSL tool, but often fails with non-ASCII)
+        if shutil.which("clip.exe"):
+            try:
+                process = subprocess.Popen(
+                    ["clip.exe"], stdin=subprocess.PIPE, close_fds=True
+                )
+                process.communicate(input=text.encode("utf-8"))
+                if process.returncode == 0:
+                    self.notify("Copied to clipboard (WSL-clip)!")
+                    return
+            except Exception:
+                pass
+
+        # 3. Final Fallback to default behavior
+        try:
+            super().copy_to_clipboard(text)
+            self.notify("Copied to clipboard!")
+        except Exception as e:
+            self.notify(f"Copy failed: {e}", severity="error")
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        # We initialized self.db in on_mount, but compose runs before on_mount in some lifecycle versions or concurrently?
-        # Actually compose runs first. So on_mount is too late for compose if we use self.db there.
-        # But wait, in the original code: yield QuizScreen(Database()) was in compose.
-        # I'll stick to creating it in compose or __init__.
-        # Let's use __init__ or just create it here.
         yield QuizScreen(Database())
 
     def action_edit_word(self) -> None:
