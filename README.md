@@ -49,7 +49,7 @@ uv run vocab-tester
 - **Quiz Screen:**
   - Type your answer and press `Enter`.
   - First prompt is for the **Kana reading**.
-  - Second prompt is for the **English meaning**.
+  - Second prompt is for the **English meaning**. (Note: Multiple semicolon-separated translations are supported; any single match will be accepted).
   - After the result is shown, press `Next` (or `Enter` if focused) to continue.
   - Click `Edit` to modify the current word.
   - Click `Add` to add a new word.

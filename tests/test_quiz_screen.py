@@ -12,7 +12,7 @@ class MockDatabase:
             kanji_word="Kanji",
             japanese_sentence="Sentence",
             kana_word="Kana",
-            english_word="Meaning",
+            english_word="Meaning; Meaning 2",
             english_sentence="EngSentence",
             tag="Tag",
         )
@@ -124,3 +124,29 @@ def test_copy_button_press(screen):
     screen.on_button_pressed(event)
 
     screen.app.copy_to_clipboard.assert_called_with("Sentence")
+
+
+def test_multiple_meanings_second_correct(screen):
+    screen.next_question()
+
+    # Case: Second meaning
+    screen.kana_answer = "Kana"
+    screen.meaning_answer = "Meaning 2"
+    screen.show_results()
+
+    screen.query_one("#result_message").update.assert_called_with(
+        "[green bold]Correct![/]"
+    )
+
+
+def test_multiple_meanings_incorrect(screen):
+    screen.next_question()
+
+    # Case: Incorrect meaning
+    screen.kana_answer = "Kana"
+    screen.meaning_answer = "Meaning 3"  # Not in "Meaning; Meaning 2"
+    screen.show_results()
+
+    # Should contain "Incorrect"
+    args, _ = screen.query_one("#result_message").update.call_args
+    assert "[red bold]Incorrect.[/]" in args[0]
