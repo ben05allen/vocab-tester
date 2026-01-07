@@ -24,7 +24,7 @@ class EditWordScreen(Screen):
                 Input(id="kanji"),
                 Label("Kana Word"),
                 Input(id="kana"),
-                Label("English Word"),
+                Label("English Words (each separated by ;)"),
                 Input(id="english"),
                 Label("Japanese Sentence"),
                 Input(id="jp_sentence"),

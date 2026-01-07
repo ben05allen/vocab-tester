@@ -34,7 +34,7 @@ class AddWordScreen(Screen):
                 ),
                 Label("Kana Word"),
                 Input(placeholder="e.g. がっこう", id="kana"),
-                Label("English Word"),
+                Label("English Words (each separated by ;)"),
                 Input(placeholder="e.g. School", id="english"),
                 Label("Japanese Sentence"),
                 Input(placeholder="e.g. 私は毎日学校に行きます。", id="jp_sentence"),
