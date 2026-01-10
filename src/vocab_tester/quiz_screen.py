@@ -78,7 +78,7 @@ class QuizScreen(Container):
 
         self.query_one("#result_message", Static).update("")
         self.query_one("#full_info", Static).update("")
-        self.query_one("#footer-buttons").styles.display = "none"
+        self.query_one("#footer-buttons").styles.display = "none"  # type: ignore
         self.query_one("#copy_btn").add_class("hidden")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -119,7 +119,7 @@ class QuizScreen(Container):
         if self.question_data.id:
             self.db.record_result(self.question_data.id, overall_correct)
             if hasattr(self.app, "update_score"):
-                self.app.update_score(overall_correct)
+                self.app.update_score(overall_correct)  # type: ignore
 
             if not overall_correct:
                 # Re-queue the word at different positions to practice again
@@ -180,14 +180,14 @@ class QuizScreen(Container):
         self.query_one("#answer_input", Input).disabled = False
         self.query_one("#result_message", Static).update("")
         self.query_one("#full_info", Static).update("")
-        self.query_one("#footer-buttons").styles.display = "none"
+        self.query_one("#footer-buttons").styles.display = "none"  # type: ignore
         self.query_one("#copy_btn").add_class("hidden")
 
         self.next_question()
 
     def action_edit_word(self) -> None:
         if self.step == "result" and self.question_data and self.question_data.id:
-            self.app.push_screen(
+            self.app.push_screen(  # type: ignore
                 EditWordScreen(self.db, self.question_data.id), self.on_edit_word_done
             )
 
