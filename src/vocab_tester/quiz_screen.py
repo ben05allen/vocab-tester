@@ -45,11 +45,29 @@ class QuizScreen(Container):
         self.next_question()
 
     def next_question(self) -> None:
-        while len(self.queue) < 10:
-            word = self.db.get_random_word(self.current_tag_filter)
-            if not word:
-                break
-            self.queue.append(word)
+        needed = 10 - len(self.queue)
+        if needed > 0:
+            exclude_ids = [w.id for w in self.queue if w.id is not None]
+
+            # 1. Fetch incorrect words first
+            incorrect_words = self.db.get_incorrect_words(
+                limit=needed,
+                tag_filter=self.current_tag_filter,
+                exclude_ids=exclude_ids,
+            )
+            self.queue.extend(incorrect_words)
+
+            needed -= len(incorrect_words)
+            if needed > 0:
+                exclude_ids.extend([w.id for w in incorrect_words if w.id is not None])
+
+                # 2. Fetch random words for the rest
+                random_words = self.db.get_random_words(
+                    limit=needed,
+                    tag_filter=self.current_tag_filter,
+                    exclude_ids=exclude_ids,
+                )
+                self.queue.extend(random_words)
 
         if not self.queue:
             self.query_one("#sentence_label", Label).update(

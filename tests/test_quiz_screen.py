@@ -7,8 +7,18 @@ from vocab_tester.models import Word
 # Mock Database
 class MockDatabase:
     def get_random_word(self, tag_filter=None):
+        return self._create_word()
+
+    def get_incorrect_words(self, limit, tag_filter=None, exclude_ids=None):
+        return []
+
+    def get_random_words(self, limit, tag_filter=None, exclude_ids=None):
+        return [self._create_word(i) for i in range(limit)]
+
+    def _create_word(self, idx=0):
+        # Use simple ID to avoid exclusion issues if needed, or just unique
         return Word(
-            id=1,
+            id=1 + idx,
             kanji_word="Kanji",
             japanese_sentence="Sentence",
             kana_word="Kana",

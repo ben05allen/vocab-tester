@@ -73,6 +73,77 @@ class Database:
             return Word(**dict(row))
         return None
 
+    def get_random_words(
+        self,
+        limit: int,
+        tag_filter: str | None = None,
+        exclude_ids: list[int] | None = None,
+    ) -> list[Word]:
+        """
+        Returns a list of random word objects.
+        """
+        con = self.get_connection()
+        cur = con.cursor()
+
+        query = "SELECT * FROM words WHERE 1=1"
+        params = []
+
+        if tag_filter:
+            query += " AND tag = ?"
+            params.append(tag_filter)
+
+        if exclude_ids:
+            placeholders = ",".join("?" * len(exclude_ids))
+            query += f" AND id NOT IN ({placeholders})"
+            params.extend(exclude_ids)
+
+        query += " ORDER BY RANDOM() LIMIT ?"
+        params.append(limit)
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        con.close()
+
+        return [Word(**dict(row)) for row in rows]
+
+    def get_incorrect_words(
+        self,
+        limit: int,
+        tag_filter: str | None = None,
+        exclude_ids: list[int] | None = None,
+    ) -> list[Word]:
+        """
+        Returns a list of words that were last answered incorrectly.
+        """
+        con = self.get_connection()
+        cur = con.cursor()
+
+        query = """
+            SELECT w.*
+            FROM words w
+            JOIN last_tested lt ON w.id = lt.word_id
+            WHERE lt.last_correct = 0
+        """
+        params = []
+
+        if tag_filter:
+            query += " AND w.tag = ?"
+            params.append(tag_filter)
+
+        if exclude_ids:
+            placeholders = ",".join("?" * len(exclude_ids))
+            query += f" AND w.id NOT IN ({placeholders})"
+            params.extend(exclude_ids)
+
+        query += " ORDER BY RANDOM() LIMIT ?"
+        params.append(limit)
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        con.close()
+
+        return [Word(**dict(row)) for row in rows]
+
     def get_tags(self) -> list[str]:
         """
         Returns a list of all unique tags, ordered by the ID of the most recent word using that tag.
