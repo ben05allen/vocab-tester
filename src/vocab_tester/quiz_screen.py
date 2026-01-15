@@ -47,27 +47,27 @@ class QuizScreen(Container):
     def next_question(self) -> None:
         needed = 10 - len(self.queue)
         if needed > 0:
-            exclude_ids = [w.id for w in self.queue if w.id is not None]
+            exclude_ids = list(self.queue)
 
             # 1. Fetch incorrect words first
-            incorrect_words = self.db.get_incorrect_words(
+            incorrect_ids = self.db.get_incorrect_word_ids(
                 limit=needed,
                 tag_filter=self.current_tag_filter,
                 exclude_ids=exclude_ids,
             )
-            self.queue.extend(incorrect_words)
+            self.queue.extend(incorrect_ids)
 
-            needed -= len(incorrect_words)
+            needed -= len(incorrect_ids)
             if needed > 0:
-                exclude_ids.extend([w.id for w in incorrect_words if w.id is not None])
+                exclude_ids.extend(incorrect_ids)
 
                 # 2. Fetch random words for the rest
-                random_words = self.db.get_random_words(
+                random_ids = self.db.get_random_word_ids(
                     limit=needed,
                     tag_filter=self.current_tag_filter,
                     exclude_ids=exclude_ids,
                 )
-                self.queue.extend(random_words)
+                self.queue.extend(random_ids)
 
         if not self.queue:
             self.query_one("#sentence_label", Label).update(
@@ -76,7 +76,13 @@ class QuizScreen(Container):
             self.query_one("#answer_input", Input).disabled = True
             return
 
-        self.question_data = self.queue.pop(0)
+        word_id = self.queue.pop(0)
+        self.question_data = self.db.get_word(word_id)
+
+        # If word not found (deleted?), skip
+        if not self.question_data:
+            self.next_question()
+            return
 
         self.step = "kana"
         self.kana_answer = ""
@@ -141,8 +147,8 @@ class QuizScreen(Container):
 
             if not overall_correct:
                 # Re-queue the word at different positions to practice again
-                self.queue.insert(2, self.question_data)
-                self.queue.insert(5, self.question_data)
+                self.queue.insert(2, self.question_data.id)
+                self.queue.insert(5, self.question_data.id)
 
         result_text = ""
         if overall_correct:

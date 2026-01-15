@@ -6,14 +6,26 @@ from vocab_tester.models import Word
 
 # Mock Database
 class MockDatabase:
+    def get_word(self, word_id):
+        return self._create_word(word_id - 1)  # id=1 -> idx=0
+
     def get_random_word(self, tag_filter=None):
         return self._create_word()
 
-    def get_incorrect_words(self, limit, tag_filter=None, exclude_ids=None):
+    def get_incorrect_word_ids(self, limit, tag_filter=None, exclude_ids=None):
         return []
 
-    def get_random_words(self, limit, tag_filter=None, exclude_ids=None):
-        return [self._create_word(i) for i in range(limit)]
+    def get_random_word_ids(self, limit, tag_filter=None, exclude_ids=None):
+        # Generate IDs
+        exclude_ids = exclude_ids or []
+        res = []
+        i = 0
+        while len(res) < limit:
+            cand = i + 1
+            if cand not in exclude_ids:
+                res.append(cand)
+            i += 1
+        return res
 
     def _create_word(self, idx=0):
         # Use simple ID to avoid exclusion issues if needed, or just unique
@@ -85,8 +97,8 @@ def test_incorrect_answer_requeues(screen):
     # Size 9 + 2 = 11
     assert len(screen.queue) == 11
 
-    assert screen.queue[2] == initial_word
-    assert screen.queue[5] == initial_word
+    assert screen.queue[2] == initial_word.id
+    assert screen.queue[5] == initial_word.id
 
 
 def test_correct_answer_does_not_requeue(screen):

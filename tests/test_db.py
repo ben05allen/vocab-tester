@@ -296,6 +296,42 @@ def test_get_incorrect_words(temp_db):
     assert not found
 
 
+def test_get_incorrect_word_ids(temp_db):
+    """Test fetching incorrect word IDs."""
+    # 1. Create a word and record it as incorrect
+    word = Word(
+        kanji_word="IncorrectID",
+        kana_word="incorrect",
+        english_word="incorrect",
+        japanese_sentence="inc",
+        english_sentence="inc",
+        tag="inc_tag",
+    )
+    temp_db.add_word(word)
+
+    # We need the ID.
+    con = temp_db.get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT id FROM words WHERE kanji_word = 'IncorrectID'")
+    w_id = cur.fetchone()[0]
+    con.close()
+
+    temp_db.record_result(w_id, correct=False)
+
+    # 2. Fetch incorrect word IDs
+    ids = temp_db.get_incorrect_word_ids(limit=10)
+    assert len(ids) >= 1
+    assert w_id in ids
+
+    # 3. Test filter
+    ids = temp_db.get_incorrect_word_ids(limit=10, tag_filter="OtherTag")
+    assert w_id not in ids
+
+    # 4. Test excludes
+    ids = temp_db.get_incorrect_word_ids(limit=10, exclude_ids=[w_id])
+    assert w_id not in ids
+
+
 def test_get_random_words_excludes(temp_db):
     """Test get_random_words respects exclusions."""
     word = Word(
@@ -318,3 +354,26 @@ def test_get_random_words_excludes(temp_db):
     words = temp_db.get_random_words(limit=100, exclude_ids=[w_id])
     for w in words:
         assert w.kanji_word != "ExcludeMe"
+
+
+def test_get_random_word_ids_excludes(temp_db):
+    """Test get_random_word_ids respects exclusions."""
+    word = Word(
+        kanji_word="ExcludeMeID",
+        kana_word="x",
+        english_word="x",
+        japanese_sentence="x",
+        english_sentence="x",
+        tag="x",
+    )
+    temp_db.add_word(word)
+
+    con = temp_db.get_connection()
+    cur = con.cursor()
+    cur.execute("SELECT id FROM words WHERE kanji_word = 'ExcludeMeID'")
+    w_id = cur.fetchone()[0]
+    con.close()
+
+    # Exclude it
+    ids = temp_db.get_random_word_ids(limit=100, exclude_ids=[w_id])
+    assert w_id not in ids
