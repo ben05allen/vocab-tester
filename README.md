@@ -44,16 +44,24 @@ Ensure you have [uv](https://github.com/astral-sh/uv) installed.
 uv run vocab-tester
 ```
 
-### Navigation
+### Navigation & Controls
 
-- **Quiz Screen:**
-  - Type your answer and press `Enter`.
-  - First prompt is for the **Kana reading**.
-  - Second prompt is for the **English meaning**. (Note: Multiple semicolon-separated translations are supported; any single match will be accepted).
-  - After the result is shown, press `Next` (or `Enter` if focused) to continue.
-  - Click `Edit` to modify the current word.
-  - Click `Add` to add a new word.
-  - Click `Filter` to choose a specific tag to study.
+The application is designed to be keyboard-centric:
+
+- **Quiz Flow:**
+  1.  **Reading:** Type the Kana reading and press `Enter`.
+  2.  **Meaning:** Type the English meaning and press `Enter`.
+      *   *Note:* Multiple meanings can be stored (semicolon-separated). Any one of them is accepted as correct.
+  3.  **Result:** View corrections. Press `Next` (or `Enter` if focused) to continue.
+
+- **Keyboard Shortcuts:**
+  - `a`: **Add** a new word.
+  - `e`: **Edit** the current word (active on result screen).
+  - `d`: Toggle **Dark/Light** mode.
+  - `q`: **Quit** the application.
+
+- **Mouse:**
+  - You can click buttons like `Filter`, `Next`, or `Copy` (appears on result screen).
 
 ## 💻 Development
 
