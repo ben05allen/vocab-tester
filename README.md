@@ -49,10 +49,10 @@ uv run vocab-tester
 The application is designed to be keyboard-centric:
 
 - **Quiz Flow:**
-  1.  **Reading:** Type the Kana reading and press `Enter`.
-  2.  **Meaning:** Type the English meaning and press `Enter`.
-      *   *Note:* Multiple meanings can be stored (semicolon-separated). Any one of them is accepted as correct.
-  3.  **Result:** View corrections. Press `Next` (or `Enter` if focused) to continue.
+  1. **Reading:** Type the Kana reading and press `Enter`.
+  2. **Meaning:** Type the English meaning and press `Enter`.
+      - _Note:_ Multiple meanings can be stored (semicolon-separated). Any one of them is accepted as correct.
+  3. **Result:** View corrections. Press `Next` (or `Enter` if focused) to continue.
 
 - **Keyboard Shortcuts:**
   - `a`: **Add** a new word.
