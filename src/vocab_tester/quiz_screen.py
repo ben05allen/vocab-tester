@@ -17,7 +17,7 @@ class QuizScreen(Container):
     def __init__(self, db: Database):
         super().__init__()
         self.db = db
-        self.queue = []
+        self.queue: list[int] = []
         self.question_data: Word | None = None
         self.kana_answer = ""
         self.meaning_answer = ""
@@ -92,7 +92,7 @@ class QuizScreen(Container):
             self.question_data.japanese_sentence
         )
         self.query_one("#prompt_label", Label).update(
-            f"Reading for: {self.question_data.kanji_word}"
+            f"Reading for: [white]{self.question_data.kanji_word}[/]"
         )
 
         inp = self.query_one("#answer_input", Input)
@@ -115,7 +115,7 @@ class QuizScreen(Container):
             self.kana_answer = val
             self.step = "meaning"
             self.query_one("#prompt_label", Label).update(
-                f"Meaning of: {self.question_data.kanji_word}"
+                f"Meaning of: [white]{self.question_data.kanji_word}[/]"
             )
             event.input.value = ""
 
@@ -145,8 +145,9 @@ class QuizScreen(Container):
             if hasattr(self.app, "update_score"):
                 self.app.update_score(overall_correct)  # type: ignore
 
-            if not overall_correct:
-                # Re-queue the word at different positions to practice again
+            # Re-queue the word at different positions to practice again
+            # if not already in the queue a couple of times
+            if not overall_correct and self.queue[1:].count(self.question_data.id) < 2:
                 self.queue.insert(2, self.question_data.id)
                 self.queue.insert(5, self.question_data.id)
 

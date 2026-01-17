@@ -108,7 +108,7 @@ SAMPLES = [
         "見る",
         "昨日、面白いテレビ番組を見ました。",
         "みる",
-        "watch",
+        "watch; see; look",
         "I watched an interesting TV program yesterday.",
         "verb",
     ),
