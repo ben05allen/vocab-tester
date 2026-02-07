@@ -21,7 +21,15 @@ A terminal-based application (TUI) designed to help you practice Japanese Kanji 
 
 ## 📦 Installation & Setup
 
-Ensure you have [uv](https://github.com/astral-sh/uv) installed.
+### Prerequisites
+
+- **Python 3.14+**
+- **uv** (Python package manager)
+- **mpg123**: Required for audio playback of example sentences.
+  - Ubuntu/Debian: `sudo apt install mpg123`
+  - macOS: `brew install mpg123`
+
+### Setup
 
 1. **Clone the repository:**
 

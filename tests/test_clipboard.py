@@ -14,8 +14,8 @@ def test_copy_to_clipboard_powershell_success():
 
     with patch("shutil.which") as mock_which:
         # Simulate powershell.exe exists
-        mock_which.side_effect = (
-            lambda x: "/path/to/powershell.exe" if x == "powershell.exe" else None
+        mock_which.side_effect = lambda x: (
+            "/path/to/powershell.exe" if x == "powershell.exe" else None
         )
 
         with patch("subprocess.Popen") as mock_popen:

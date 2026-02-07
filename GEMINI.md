@@ -7,6 +7,7 @@ A Terminal User Interface (TUI) application built with Textual to help users pra
 - Language: Python 3.14+
 - TUI Framework: Textual
 - Package Manager: uv (using pyproject.toml for metadata)
+- External Dependencies: mpg123 (for audio playback)
 - Database: SQLite3
 - Linting/Formatting: ruff
 - Git Hooks: prek (pre-commit management)
