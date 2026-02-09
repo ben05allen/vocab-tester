@@ -10,6 +10,7 @@ from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
+from .utils import set_ime_mode
 
 
 class QuizScreen(Container):
@@ -90,6 +91,7 @@ class QuizScreen(Container):
             return
 
         self.step = "kana"
+        set_ime_mode(True)
         self.kana_answer = ""
         self.meaning_answer = ""
 
@@ -120,6 +122,7 @@ class QuizScreen(Container):
         if self.step == "kana":
             self.kana_answer = val
             self.step = "meaning"
+            set_ime_mode(False)
             self.query_one("#prompt_label", Label).update(
                 f"Meaning of: [white]{self.question_data.kanji_word}[/]"
             )

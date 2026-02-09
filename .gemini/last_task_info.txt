@@ -1,0 +1,4 @@
+This is a marker file to indicate that the user requested to toggle keyboard languages.
+Implemented in src/vocab_tester/utils.py and src/vocab_tester/quiz_screen.py.
+Tests in tests/test_utils.py.
+Updated to support WSL2 via PowerShell P/Invoke using AttachThreadInput + SendMessage(WM_IME_CONTROL).
