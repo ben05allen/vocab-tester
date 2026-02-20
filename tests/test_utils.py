@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from vocab_tester.utils import set_ime_mode, is_wsl
+from vocab_tester.utils import set_ime_mode, is_wsl, is_answer_correct
 
 
 def test_is_wsl():
@@ -119,3 +119,28 @@ def test_set_ime_mode_windows_exception():
 
             # Should not raise
             set_ime_mode(True)
+
+
+def test_is_answer_correct():
+    # Single answer
+    assert is_answer_correct("hello", "hello") is True
+    assert is_answer_correct("HELLO", "hello") is True
+    assert is_answer_correct("  hello  ", "hello") is True
+
+    # Punctuation and spaces
+    assert is_answer_correct("to go", "to go") is True
+    assert is_answer_correct("togo", "to go") is True
+    assert is_answer_correct("to go", "togo") is True
+    assert is_answer_correct("hello!", "hello") is True
+    assert is_answer_correct("don't", "dont") is True
+    assert is_answer_correct("dont", "don't") is True
+
+    # Multiple answers
+    assert is_answer_correct("to go", "to go; to leave") is True
+    assert is_answer_correct("to leave", "to go; to leave") is True
+    assert is_answer_correct("toleave", "to go; to leave") is True
+    assert is_answer_correct("to go!", "to go; to leave") is True
+
+    # Mismatches
+    assert is_answer_correct("bye", "hello") is False
+    assert is_answer_correct("to stay", "to go; to leave") is False

@@ -10,7 +10,7 @@ from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
-from .utils import set_ime_mode
+from .utils import set_ime_mode, is_answer_correct
 
 
 class QuizScreen(Container):
@@ -140,12 +140,10 @@ class QuizScreen(Container):
         self.query_one("#answer_input", Input).disabled = True
 
         is_kana_correct = self.kana_answer == self.question_data.kana_word
-        # Support multiple meanings separated by semicolon
-        correct_meanings = {
-            m.strip().lower() for m in self.question_data.english_word.split(";")
-        }
-        is_meaning_correct = self.meaning_answer.strip().lower() in correct_meanings
-
+        # Validate meaning
+        is_meaning_correct = is_answer_correct(
+            self.meaning_answer, self.question_data.english_word
+        )
         overall_correct = is_kana_correct and is_meaning_correct
 
         # Record result (logic in db can be expanded)
@@ -278,13 +276,8 @@ class QuizScreen(Container):
 
                 # Re-calculate result message
                 is_kana_correct = self.kana_answer == self.question_data.kana_word
-                # Support multiple meanings separated by semicolon
-                correct_meanings = {
-                    m.strip().lower()
-                    for m in self.question_data.english_word.split(";")
-                }
-                is_meaning_correct = (
-                    self.meaning_answer.strip().lower() in correct_meanings
+                is_meaning_correct = is_answer_correct(
+                    self.meaning_answer, self.question_data.english_word
                 )
                 overall_correct = is_kana_correct and is_meaning_correct
 
