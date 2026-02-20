@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from vocab_tester.quiz_screen import QuizScreen
+from vocab_tester.quiz_screen import is_answer_correct, QuizScreen
 from vocab_tester.models import Word
 
 
@@ -172,3 +172,28 @@ def test_multiple_meanings_incorrect(screen):
     # Should contain "Incorrect"
     args, _ = screen.query_one("#result_message").update.call_args
     assert "[red bold]Incorrect.[/]" in args[0]
+
+
+def test_is_answer_correct():
+    # Single answer
+    assert is_answer_correct("hello", "hello") is True
+    assert is_answer_correct("HELLO", "hello") is True
+    assert is_answer_correct("  hello  ", "hello") is True
+
+    # Punctuation and spaces
+    assert is_answer_correct("to go", "to go") is True
+    assert is_answer_correct("togo", "to go") is True
+    assert is_answer_correct("to go", "togo") is True
+    assert is_answer_correct("hello!", "hello") is True
+    assert is_answer_correct("don't", "dont") is True
+    assert is_answer_correct("dont", "don't") is True
+
+    # Multiple answers
+    assert is_answer_correct("to go", "to go; to leave") is True
+    assert is_answer_correct("to leave", "to go; to leave") is True
+    assert is_answer_correct("toleave", "to go; to leave") is True
+    assert is_answer_correct("to go!", "to go; to leave") is True
+
+    # Mismatches
+    assert is_answer_correct("bye", "hello") is False
+    assert is_answer_correct("to stay", "to go; to leave") is False

@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from vocab_tester.utils import set_ime_mode, is_wsl, is_answer_correct
+from vocab_tester.wsl_utils import set_ime_mode, is_wsl
 
 
 def test_is_wsl():
@@ -17,7 +17,7 @@ def test_is_wsl():
 
 def test_set_ime_mode_wsl():
     with patch("sys.platform", "linux"):
-        with patch("vocab_tester.utils.is_wsl", return_value=True):
+        with patch("vocab_tester.wsl_utils.is_wsl", return_value=True):
             with patch("subprocess.Popen") as mock_popen:
                 set_ime_mode(True)
                 mock_popen.assert_called_once()
@@ -33,7 +33,7 @@ def test_set_ime_mode_wsl():
 def test_set_ime_mode_wsl_fallback():
     # Simulate first Popen raising FileNotFoundError, second succeeding
     with patch("sys.platform", "linux"):
-        with patch("vocab_tester.utils.is_wsl", return_value=True):
+        with patch("vocab_tester.wsl_utils.is_wsl", return_value=True):
             # First call raises, second returns mock
             side_effects = [FileNotFoundError, MagicMock()]
             with patch("subprocess.Popen", side_effect=side_effects) as mock_popen:
@@ -57,7 +57,7 @@ def test_set_ime_mode_linux():
     # Should do nothing on linux (non-WSL)
     with patch("sys.platform", "linux"):
         # We assume is_wsl returns False for this test
-        with patch("vocab_tester.utils.is_wsl", return_value=False):
+        with patch("vocab_tester.wsl_utils.is_wsl", return_value=False):
             # We also need to mock ctypes just in case it tries to access it
             with patch("ctypes.windll", create=True) as mock_windll:
                 set_ime_mode(True)
@@ -119,28 +119,3 @@ def test_set_ime_mode_windows_exception():
 
             # Should not raise
             set_ime_mode(True)
-
-
-def test_is_answer_correct():
-    # Single answer
-    assert is_answer_correct("hello", "hello") is True
-    assert is_answer_correct("HELLO", "hello") is True
-    assert is_answer_correct("  hello  ", "hello") is True
-
-    # Punctuation and spaces
-    assert is_answer_correct("to go", "to go") is True
-    assert is_answer_correct("togo", "to go") is True
-    assert is_answer_correct("to go", "togo") is True
-    assert is_answer_correct("hello!", "hello") is True
-    assert is_answer_correct("don't", "dont") is True
-    assert is_answer_correct("dont", "don't") is True
-
-    # Multiple answers
-    assert is_answer_correct("to go", "to go; to leave") is True
-    assert is_answer_correct("to leave", "to go; to leave") is True
-    assert is_answer_correct("toleave", "to go; to leave") is True
-    assert is_answer_correct("to go!", "to go; to leave") is True
-
-    # Mismatches
-    assert is_answer_correct("bye", "hello") is False
-    assert is_answer_correct("to stay", "to go; to leave") is False

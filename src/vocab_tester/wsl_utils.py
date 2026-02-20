@@ -3,40 +3,6 @@ import ctypes
 import platform
 import subprocess
 import base64
-import re
-
-
-def normalize_text(text: str) -> str:
-    """
-    Normalizes text by converting to lowercase and removing all spaces and punctuation.
-    """
-    # Remove all characters that are not letters or numbers
-    # We use \w but that includes underscores, so let's be more specific if needed.
-    # Actually, for English meanings, we probably just want to keep alphanumeric.
-    # \W matches any non-alphanumeric character; equivalent to [^a-zA-Z0-9_].
-    # Let's also remove underscores just in case.
-    normalized = text.lower()
-    normalized = re.sub(r"[^a-z0-9]", "", normalized)
-    return normalized
-
-
-def is_answer_correct(user_answer: str, correct_answers_str: str) -> bool:
-    """
-    Checks if the user's answer matches any of the semicolon-separated correct answers,
-    ignoring case, spaces, and punctuation.
-    """
-    user_normalized = normalize_text(user_answer)
-    if not user_normalized and user_answer.strip():
-        # If the user typed something that becomes empty after normalization (e.g. just punctuation)
-        # we just fail.
-        # But usually, if they typed "...", it shouldn't match "word".
-        return False
-
-    correct_list = [a.strip() for a in correct_answers_str.split(";")]
-    for correct in correct_list:
-        if user_normalized == normalize_text(correct):
-            return True
-    return False
 
 
 def is_wsl() -> bool:
