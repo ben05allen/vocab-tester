@@ -64,11 +64,13 @@ def test_audio_button_press_calls_play_audio(screen):
     screen.play_audio.assert_called_once()
 
 
+@patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
 @patch("vocab_tester.quiz_screen.subprocess.run")
-@patch("vocab_tester.quiz_screen.os.remove")
 @patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-def test_generate_and_play_audio(mock_tempfile, mock_remove, mock_subprocess, screen):
-    """Test the internal logic of audio generation and playback."""
+def test_generate_and_play_audio_non_wsl(
+    mock_tempfile, mock_subprocess, mock_is_wsl, screen
+):
+    """Test the internal logic of audio generation and playback (non-WSL)."""
 
     # Mock temp file context manager
     mock_temp_obj = MagicMock()
@@ -90,11 +92,73 @@ def test_generate_and_play_audio(mock_tempfile, mock_remove, mock_subprocess, sc
 
         # Verify subprocess interaction (using mpg123)
         mock_subprocess.assert_called_once_with(
-            ["mpg123", "-q", "/tmp/fake_audio.mp3"], check=False
+            [
+                "mpg123",
+                "-q",
+                "-f",
+                "16384",
+                "-r",
+                "44100",
+                "-b",
+                "1024",
+                "/tmp/fake_audio.mp3",
+            ],
+            check=False,
         )
 
-        # Verify cleanup
-        mock_remove.assert_called_once_with("/tmp/fake_audio.mp3")
+
+@patch("vocab_tester.quiz_screen.is_wsl", return_value=True)
+@patch(
+    "vocab_tester.quiz_screen.subprocess.check_output",
+    return_value=b"C:\\fake_audio.wav",
+)
+@patch("vocab_tester.quiz_screen.subprocess.run")
+@patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
+def test_generate_and_play_audio_wsl(
+    mock_tempfile,
+    mock_subprocess_run,
+    mock_subprocess_check_output,
+    mock_is_wsl,
+    screen,
+):
+    """Test the internal logic of audio generation and playback (WSL)."""
+
+    # Mock temp file context managers
+    mock_mp3_obj = MagicMock()
+    mock_mp3_obj.name = "/tmp/fake_audio.mp3"
+    mock_wav_obj = MagicMock()
+    mock_wav_obj.name = "/tmp/fake_audio.wav"
+    mock_tempfile.return_value.__enter__.side_effect = [mock_mp3_obj, mock_wav_obj]
+
+    # Mock gTTS using patch.dict on sys.modules because it's imported locally
+    mock_gtts_module = MagicMock()
+    mock_gtts_class = MagicMock()
+    mock_gtts_module.gTTS = mock_gtts_class
+
+    with patch.dict(sys.modules, {"gtts": mock_gtts_module}):
+        # Call the synchronous method directly
+        screen._generate_and_play_audio("Konnichiwa")
+
+        # Verify gTTS interactions
+        mock_gtts_class.assert_called_once_with("Konnichiwa", lang="ja")
+        mock_gtts_class.return_value.save.assert_called_once_with("/tmp/fake_audio.mp3")
+
+        # Verify subprocess interactions
+        mock_subprocess_run.assert_any_call(
+            ["mpg123", "-q", "-w", "/tmp/fake_audio.wav", "/tmp/fake_audio.mp3"],
+            check=False,
+        )
+        mock_subprocess_check_output.assert_called_once_with(
+            ["wslpath", "-w", "/tmp/fake_audio.wav"]
+        )
+        mock_subprocess_run.assert_any_call(
+            [
+                "powershell.exe",
+                "-Command",
+                "(New-Object System.Media.SoundPlayer 'C:\\fake_audio.wav').PlaySync()",
+            ],
+            check=False,
+        )
 
 
 def test_audio_missing_gtts(screen):
@@ -124,9 +188,10 @@ def test_audio_missing_gtts(screen):
     pass
 
 
+@patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
 @patch("vocab_tester.quiz_screen.subprocess.run")
 @patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-def test_audio_playback_error(mock_tempfile, mock_subprocess, screen):
+def test_audio_playback_error(mock_tempfile, mock_subprocess, mock_is_wsl, screen):
     """Test handling of playback errors."""
     mock_tempfile.return_value.__enter__.return_value.name = "f"
 

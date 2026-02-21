@@ -1,4 +1,3 @@
-import os
 import re
 import subprocess
 import tempfile
@@ -11,7 +10,7 @@ from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
-from .wsl_utils import set_ime_mode
+from .wsl_utils import set_ime_mode, is_wsl
 
 
 def normalize_text(text: str) -> str:
@@ -235,17 +234,40 @@ class QuizScreen(Container):
             # Generate audio
             tts = gTTS(sentence, lang="ja")
 
-            # Create a temp file
-            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
-                temp_path = f.name
+            with tempfile.NamedTemporaryFile(suffix=".mp3") as f_mp3:
+                tts.save(f_mp3.name)
 
-            tts.save(temp_path)
+                if is_wsl():
+                    with tempfile.NamedTemporaryFile(suffix=".wav") as f_wav:
+                        subprocess.run(
+                            ["mpg123", "-q", "-w", f_wav.name, f_mp3.name], check=False
+                        )
+                        win_path = (
+                            subprocess.check_output(["wslpath", "-w", f_wav.name])
+                            .decode("utf-8")
+                            .strip()
+                        )
+                        ps_command = f"(New-Object System.Media.SoundPlayer '{win_path}').PlaySync()"
+                        subprocess.run(
+                            ["powershell.exe", "-Command", ps_command], check=False
+                        )
 
-            # Play audio
-            subprocess.run(["mpg123", "-q", temp_path], check=False)
-
-            # Cleanup
-            os.remove(temp_path)
+                else:
+                    # Play audio
+                    subprocess.run(
+                        [
+                            "mpg123",
+                            "-q",
+                            "-f",
+                            "16384",
+                            "-r",
+                            "44100",
+                            "-b",
+                            "1024",
+                            f_mp3.name,
+                        ],
+                        check=False,
+                    )
 
         except ImportError:
             self.app.notify(
