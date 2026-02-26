@@ -6,15 +6,15 @@ readme = "README.md"
 authors = [{ name = "Ben Allen", email = "ben05allen@hotmail.com" }]
 requires-python = ">=3.14"
 dependencies = [
-    "google-genai>=1.56.0",
-    "gTTS>=2.5.1",
-    "pydantic>=2.12.5",
-    "python-dotenv>=1.2.1",
-    "textual>=6.11.0",
+  "google-genai>=1.56.0",
+  "gTTS>=2.5.1",
+  "pydantic>=2.12.5",
+  "python-dotenv>=1.2.1",
+  "textual>=6.11.0",
 ]
 
 [project.scripts]
-vocab-tester = "vocab_tester.main:main"
+vocab-tester = "vocab_tester:main"
 
 [build-system]
 requires = ["uv_build>=0.9.16,<0.10.0"]
@@ -22,10 +22,10 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
-    "pytest-cov>=7.0.0",
-    "pytest-asyncio>=0.23.0",
-    "ruff>=0.14.10",
+  "pytest>=9.0.2",
+  "pytest-cov>=7.0.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.14.10",
 ]
 
 [tool.pytest.ini_options]
