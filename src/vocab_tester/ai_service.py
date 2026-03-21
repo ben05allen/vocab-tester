@@ -56,6 +56,7 @@ class AIService:
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=GeneratedWordData,
+                    temperature=1.2,
                 ),
             )
 
