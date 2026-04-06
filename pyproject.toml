@@ -8,6 +8,7 @@ requires-python = ">=3.14"
 dependencies = [
   "google-genai>=1.56.0",
   "gTTS>=2.5.1",
+  "kanjiconv>=0.2.5",
   "pydantic>=2.12.5",
   "python-dotenv>=1.2.1",
   "textual>=6.11.0",
@@ -17,7 +18,7 @@ dependencies = [
 vocab-tester = "vocab_tester:main"
 
 [build-system]
-requires = ["uv_build>=0.9.16,<0.10.0"]
+requires = ["uv_build>=0.11.3,<0.12"]
 build-backend = "uv_build"
 
 [dependency-groups]

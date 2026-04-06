@@ -1,3 +1,4 @@
+from kanjiconv import KanjiConv
 import re
 import subprocess
 import tempfile
@@ -11,6 +12,8 @@ from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
 from .wsl_utils import set_ime_mode, is_wsl
+
+kanji_conv = KanjiConv()
 
 
 def normalize_text(text: str) -> str:
@@ -200,7 +203,11 @@ class QuizScreen(Container):
 
         self.query_one("#result_message", Static).update(result_text)
 
-        full_info = f"Sentence: {self.question_data.english_sentence}\n({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
+        full_info = (
+            f"Sentence: {self.question_data.english_sentence}\n"
+            f"Hiragana: {kanji_conv.to_hiragana(self.question_data.japanese_sentence)}\n"
+            f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
+        )
         self.query_one("#full_info", Static).update(full_info)
 
         self.query_one("#footer-buttons").styles.display = "block"
