@@ -215,7 +215,7 @@ class QuizScreen(Container):
 
         full_info = (
             f"Sentence: {self.question_data.english_sentence}\n"
-            f"Hiragana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
+            f"Kana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
             f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
         )
         self.query_one("#full_info", Static).update(full_info)
