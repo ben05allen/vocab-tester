@@ -1,0 +1,3 @@
+# defaults to hiragana unless set to
+# "katakana" or "romanji"
+translation-kana = "katakana"

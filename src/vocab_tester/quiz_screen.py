@@ -2,6 +2,8 @@ from kanjiconv import KanjiConv
 import re
 import subprocess
 import tempfile
+import tomllib
+
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
@@ -14,6 +16,14 @@ from .models import Word
 from .wsl_utils import set_ime_mode, is_wsl
 
 kanji_conv = KanjiConv()
+with open("settings.toml", "rb") as f:
+    config = tomllib.load(f)
+
+kanji_to_kana = kanji_conv.to_hiragana
+if config.get("translation-kana", "").lower() == "katakana":
+    kanji_to_kana = kanji_conv.to_katakana
+elif config.get("translation-kana", "").lower() == "romanji":
+    kanji_to_kana = kanji_conv.to_roman
 
 
 def normalize_text(text: str) -> str:
@@ -205,7 +215,7 @@ class QuizScreen(Container):
 
         full_info = (
             f"Sentence: {self.question_data.english_sentence}\n"
-            f"Hiragana: {kanji_conv.to_hiragana(self.question_data.japanese_sentence)}\n"
+            f"Hiragana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
             f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
         )
         self.query_one("#full_info", Static).update(full_info)
