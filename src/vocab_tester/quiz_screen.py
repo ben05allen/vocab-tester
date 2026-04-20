@@ -16,8 +16,12 @@ from .models import Word
 from .wsl_utils import set_ime_mode, is_wsl
 
 kanji_conv = KanjiConv()
-with open("settings.toml", "rb") as f:
-    config = tomllib.load(f)
+config = {}
+try:
+    with open("settings.toml", "rb") as f:
+        config = tomllib.load(f)
+except FileNotFoundError:
+    pass
 
 kanji_to_kana = kanji_conv.to_hiragana
 if config.get("translation-kana", "").lower() == "katakana":
@@ -90,6 +94,16 @@ class QuizScreen(Container):
                 yield Button("Quit", variant="error", id="quit_btn")
 
     def on_mount(self) -> None:
+        # Load default filter if set and valid
+        default_filter = config.get("default-filter")
+        if default_filter:
+            available_tags = self.db.get_tags()
+            if default_filter in available_tags:
+                self.current_tag_filter = default_filter
+                self.query_one("#filter_label", Label).update(
+                    f"Filter: {default_filter}"
+                )
+
         self.next_question()
 
     def next_question(self) -> None:
