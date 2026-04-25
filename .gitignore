@@ -10,5 +10,6 @@ wheels/
 .venv
 *.db
 
-# Sensitive information 
+# Sensitive information
 .env
+settings.toml
