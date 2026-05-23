@@ -1,5 +1,5 @@
-# defaults to hiragana unless set to
-# "katakana" or "romanji"
+# defaults to katakana unless set to
+# "hiragana" or "romanji"
 translation-kana = "katakana"
 
 # set to the name of the filter that

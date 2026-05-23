@@ -1,21 +1,25 @@
-from kanjiconv import KanjiConv
 import re
 import subprocess
 import tempfile
 import tomllib
+
+from jaconv import kata2hira, kata2alphabet
+from sudachipy import Dictionary
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
 from textual.reactive import reactive
 from textual import work
+
 from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
 from .wsl_utils import set_ime_mode, is_wsl
 
-kanji_conv = KanjiConv()
+TOKENIZER = Dictionary().create()
+
 config = {}
 try:
     with open("settings.toml", "rb") as f:
@@ -23,11 +27,20 @@ try:
 except FileNotFoundError:
     pass
 
-kanji_to_kana = kanji_conv.to_hiragana
-if config.get("translation-kana", "").lower() == "katakana":
-    kanji_to_kana = kanji_conv.to_katakana
-elif config.get("translation-kana", "").lower() == "romanji":
-    kanji_to_kana = kanji_conv.to_roman
+
+def kanji_to_kana(text, *, kana_filter: str = "") -> str:
+    if kana_filter == "" and config.get("translation-kana"):
+        kana_filter = config["translation-kana"]
+
+    tokens = TOKENIZER.tokenize(text)
+    kana = " ".join(t.reading_form() for t in tokens)
+
+    if kana_filter.lower() == "hiragana":
+        return kata2hira(kana)
+    elif kana_filter.lower() in ["romanji", "latin", "alphabet"]:
+        return kata2alphabet(kana)
+
+    return kana
 
 
 def normalize_text(text: str) -> str:
@@ -72,6 +85,7 @@ class QuizScreen(Container):
         self.question_data: Word | None = None
         self.kana_answer = ""
         self.meaning_answer = ""
+        self.full_info = ""
         self.current_tag_filter = None
 
     def compose(self) -> ComposeResult:
@@ -150,6 +164,7 @@ class QuizScreen(Container):
         set_ime_mode(True)
         self.kana_answer = ""
         self.meaning_answer = ""
+        self.full_info = ""
 
         self.query_one("#sentence_label", Label).update(
             self.question_data.japanese_sentence
@@ -164,8 +179,8 @@ class QuizScreen(Container):
         inp.focus()
 
         self.query_one("#result_message", Static).update("")
-        self.query_one("#full_info", Static).update("")
-        self.query_one("#footer-buttons").styles.display = "none"  # type: ignore
+        self.query_one("#full_info", Static).update(self.full_info)
+        self.query_one("#footer-buttons").styles.display = "none"
         self.query_one("#copy_btn").add_class("hidden")
         self.query_one("#audio_btn").add_class("hidden")
 
@@ -214,7 +229,6 @@ class QuizScreen(Container):
                 self.queue.insert(2, self.question_data.id)
                 self.queue.insert(5, self.question_data.id)
 
-        result_text = ""
         if overall_correct:
             result_text = "[green bold]Correct![/]"
         else:
@@ -227,12 +241,12 @@ class QuizScreen(Container):
 
         self.query_one("#result_message", Static).update(result_text)
 
-        full_info = (
+        self.full_info = (
             f"Sentence: {self.question_data.english_sentence}\n"
             f"Kana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
             f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
         )
-        self.query_one("#full_info", Static).update(full_info)
+        self.query_one("#full_info", Static).update(self.full_info)
 
         self.query_one("#footer-buttons").styles.display = "block"
         self.query_one("#copy_btn").remove_class("hidden")
@@ -330,7 +344,7 @@ class QuizScreen(Container):
         self.query_one("#answer_input", Input).disabled = False
         self.query_one("#result_message", Static).update("")
         self.query_one("#full_info", Static).update("")
-        self.query_one("#footer-buttons").styles.display = "none"  # type: ignore
+        self.query_one("#footer-buttons").styles.display = "none"
         self.query_one("#copy_btn").add_class("hidden")
         self.query_one("#audio_btn").add_class("hidden")
 
@@ -351,8 +365,12 @@ class QuizScreen(Container):
                 self.question_data = new_data
 
                 # Refresh display
-                full_info = f"Sentence: {self.question_data.english_sentence}\n({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
-                self.query_one("#full_info", Static).update(full_info)
+                self.full_info = (
+                    f"Sentence: {self.question_data.english_sentence}\n"
+                    f"Kana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
+                    f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
+                )
+                self.query_one("#full_info", Static).update(self.full_info)
                 self.query_one("#sentence_label", Label).update(
                     self.question_data.japanese_sentence
                 )
@@ -364,7 +382,6 @@ class QuizScreen(Container):
                 )
                 overall_correct = is_kana_correct and is_meaning_correct
 
-                result_text = ""
                 if overall_correct:
                     result_text = "[green bold]Correct![/]"
                 else:
