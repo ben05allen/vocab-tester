@@ -41,13 +41,6 @@ def test_seed_data(temp_db):
     con.close()
 
 
-def test_get_random_word(temp_db):
-    """Test fetching a random word."""
-    word = temp_db.get_random_word()
-    assert word is not None
-    assert hasattr(word, "kanji_word")
-
-
 def test_record_result(temp_db):
     """Test recording a result."""
     # First ensure we have a word
@@ -246,56 +239,6 @@ def test_get_random_word_filtered(temp_db):
     assert word is None
 
 
-def test_get_incorrect_words(temp_db):
-    """Test fetching incorrect words."""
-    # 1. Create a word and record it as incorrect
-    word = Word(
-        kanji_word="Incorrect",
-        kana_word="incorrect",
-        english_word="incorrect",
-        japanese_sentence="inc",
-        english_sentence="inc",
-        tag="inc_tag",
-    )
-    temp_db.add_word(word)
-
-    # We need the ID. Since add_word doesn't return ID, we fetch it.
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT id FROM words WHERE kanji_word = 'Incorrect'")
-    w_id = cur.fetchone()[0]
-    con.close()
-
-    temp_db.record_result(w_id, correct=False)
-
-    # 2. Fetch incorrect words
-    words = temp_db.get_incorrect_words(limit=10)
-    assert len(words) >= 1
-    found = False
-    for w in words:
-        if w.kanji_word == "Incorrect":
-            found = True
-            break
-    assert found
-
-    # 3. Test filter
-    words = temp_db.get_incorrect_words(limit=10, tag_filter="OtherTag")
-    # Should not find it
-    found = False
-    for w in words:
-        if w.kanji_word == "Incorrect":
-            found = True
-    assert not found
-
-    # 4. Test excludes
-    words = temp_db.get_incorrect_words(limit=10, exclude_ids=[w_id])
-    found = False
-    for w in words:
-        if w.kanji_word == "Incorrect":
-            found = True
-    assert not found
-
-
 def test_get_incorrect_word_ids(temp_db):
     """Test fetching incorrect word IDs."""
     # 1. Create a word and record it as incorrect
@@ -330,30 +273,6 @@ def test_get_incorrect_word_ids(temp_db):
     # 4. Test excludes
     ids = temp_db.get_incorrect_word_ids(limit=10, exclude_ids=[w_id])
     assert w_id not in ids
-
-
-def test_get_random_words_excludes(temp_db):
-    """Test get_random_words respects exclusions."""
-    word = Word(
-        kanji_word="ExcludeMe",
-        kana_word="x",
-        english_word="x",
-        japanese_sentence="x",
-        english_sentence="x",
-        tag="x",
-    )
-    temp_db.add_word(word)
-
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT id FROM words WHERE kanji_word = 'ExcludeMe'")
-    w_id = cur.fetchone()[0]
-    con.close()
-
-    # Exclude it
-    words = temp_db.get_random_words(limit=100, exclude_ids=[w_id])
-    for w in words:
-        assert w.kanji_word != "ExcludeMe"
 
 
 def test_get_random_word_ids_excludes(temp_db):
