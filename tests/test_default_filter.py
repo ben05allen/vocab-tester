@@ -27,7 +27,9 @@ def test_default_filter_applied_on_mount():
     mock_db.get_tags.return_value = ["spring26", "other"]
     # Mock next_question to avoid queue filling logic in this test
     with patch.object(QuizScreen, "next_question"):
-        with patch("vocab_tester.quiz_screen.config", {"default-filter": "spring26"}):
+        mock_config = MagicMock()
+        mock_config.default_filter = "spring26"
+        with patch("vocab_tester.quiz_screen.CONFIG", mock_config):
             screen = MockQuizScreen(mock_db)
             screen.on_mount()
 
@@ -41,7 +43,9 @@ def test_default_filter_ignored_if_invalid():
     mock_db = MagicMock()
     mock_db.get_tags.return_value = ["other"]
     with patch.object(QuizScreen, "next_question"):
-        with patch("vocab_tester.quiz_screen.config", {"default-filter": "spring26"}):
+        mock_config = MagicMock()
+        mock_config.default_filter = "spring26"
+        with patch("vocab_tester.quiz_screen.CONFIG", mock_config):
             screen = MockQuizScreen(mock_db)
             screen.on_mount()
 
@@ -55,7 +59,9 @@ def test_no_default_filter():
     mock_db = MagicMock()
     mock_db.get_tags.return_value = ["spring26", "other"]
     with patch.object(QuizScreen, "next_question"):
-        with patch("vocab_tester.quiz_screen.config", {}):
+        mock_config = MagicMock()
+        mock_config.default_filter = None
+        with patch("vocab_tester.quiz_screen.CONFIG", mock_config):
             screen = MockQuizScreen(mock_db)
             screen.on_mount()
 

@@ -1,36 +1,34 @@
+from pathlib import Path
 import re
 import subprocess
 import tempfile
-import tomllib
 
 from jaconv import kata2hira, kata2alphabet
 from sudachipy import Dictionary
 
+from gtts import gTTS
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
 from textual.reactive import reactive
 from textual import work
 
+from .config import Config
 from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
 from .wsl_utils import set_ime_mode, is_wsl
 
-TOKENIZER = Dictionary().create()
 
-config = {}
-try:
-    with open("settings.toml", "rb") as f:
-        config = tomllib.load(f)
-except FileNotFoundError:
-    pass
+_config_path = Path("settings.toml")
+CONFIG = Config.from_file(_config_path)
+TOKENIZER = Dictionary().create()
 
 
 def kanji_to_kana(text, *, kana_filter: str = "") -> str:
-    if kana_filter == "" and config.get("translation-kana"):
-        kana_filter = config["translation-kana"]
+    if kana_filter == "":
+        kana_filter = CONFIG.translation_kana
 
     tokens = TOKENIZER.tokenize(text)
     kana = " ".join(t.reading_form() for t in tokens)
@@ -109,7 +107,7 @@ class QuizScreen(Container):
 
     def on_mount(self) -> None:
         # Load default filter if set and valid
-        default_filter = config.get("default-filter")
+        default_filter = CONFIG.default_filter
         if default_filter:
             available_tags = self.db.get_tags()
             if default_filter in available_tags:
@@ -274,8 +272,6 @@ class QuizScreen(Container):
 
     def _generate_and_play_audio(self, sentence: str) -> None:
         try:
-            from gtts import gTTS
-
             # Generate audio
             tts = gTTS(sentence, lang="ja")
 
@@ -283,22 +279,19 @@ class QuizScreen(Container):
                 tts.save(f_mp3.name)
 
                 if is_wsl():
-                    with tempfile.NamedTemporaryFile(suffix=".wav") as f_wav:
-                        subprocess.run(
-                            ["mpg123", "-q", "-w", f_wav.name, f_mp3.name], check=False
-                        )
-                        win_path = (
-                            subprocess.check_output(["wslpath", "-w", f_wav.name])
-                            .decode("utf-8")
-                            .strip()
-                        )
-                        ps_command = f"(New-Object System.Media.SoundPlayer '{win_path}').PlaySync()"
-                        subprocess.run(
-                            ["powershell.exe", "-Command", ps_command], check=False
-                        )
+                    win_path = (
+                        subprocess.check_output(["wslpath", "-w", f_mp3.name])
+                        .decode("utf-8")
+                        .strip()
+                    )
+                    subprocess.run(
+                        ["ffplay.exe", "-nodisp", "-autoexit", win_path],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=False,
+                    )
 
                 else:
-                    # Play audio
                     subprocess.run(
                         [
                             "mpg123",
@@ -314,10 +307,6 @@ class QuizScreen(Container):
                         check=False,
                     )
 
-        except ImportError:
-            self.app.notify(
-                "gTTS not installed. Please run 'uv sync'.", severity="error"
-            )
         except Exception as e:
             self.app.notify(f"Error playing audio: {e}", severity="error")
 

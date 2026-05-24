@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import sys
+import subprocess
 from vocab_tester.quiz_screen import QuizScreen
 from vocab_tester.models import Word
 
@@ -67,8 +68,9 @@ def test_audio_button_press_calls_play_audio(screen):
 @patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
 @patch("vocab_tester.quiz_screen.subprocess.run")
 @patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
+@patch("vocab_tester.quiz_screen.gTTS")
 def test_generate_and_play_audio_non_wsl(
-    mock_tempfile, mock_subprocess, mock_is_wsl, screen
+    mock_gtts_class, mock_tempfile, mock_subprocess, mock_is_wsl, screen
 ):
     """Test the internal logic of audio generation and playback (non-WSL)."""
 
@@ -77,44 +79,40 @@ def test_generate_and_play_audio_non_wsl(
     mock_temp_obj.name = "/tmp/fake_audio.mp3"
     mock_tempfile.return_value.__enter__.return_value = mock_temp_obj
 
-    # Mock gTTS using patch.dict on sys.modules because it's imported locally
-    mock_gtts_module = MagicMock()
-    mock_gtts_class = MagicMock()
-    mock_gtts_module.gTTS = mock_gtts_class
+    # Call the synchronous method directly
+    screen._generate_and_play_audio("Konnichiwa")
 
-    with patch.dict(sys.modules, {"gtts": mock_gtts_module}):
-        # Call the synchronous method directly
-        screen._generate_and_play_audio("Konnichiwa")
+    # Verify gTTS interactions
+    mock_gtts_class.assert_called_once_with("Konnichiwa", lang="ja")
+    mock_gtts_class.return_value.save.assert_called_once_with("/tmp/fake_audio.mp3")
 
-        # Verify gTTS interactions
-        mock_gtts_class.assert_called_once_with("Konnichiwa", lang="ja")
-        mock_gtts_class.return_value.save.assert_called_once_with("/tmp/fake_audio.mp3")
-
-        # Verify subprocess interaction (using mpg123)
-        mock_subprocess.assert_called_once_with(
-            [
-                "mpg123",
-                "-q",
-                "-f",
-                "16384",
-                "-r",
-                "44100",
-                "-b",
-                "1024",
-                "/tmp/fake_audio.mp3",
-            ],
-            check=False,
-        )
+    # Verify subprocess interaction (using mpg123)
+    mock_subprocess.assert_called_once_with(
+        [
+            "mpg123",
+            "-q",
+            "-f",
+            "16384",
+            "-r",
+            "44100",
+            "-b",
+            "1024",
+            "/tmp/fake_audio.mp3",
+        ],
+        check=False,
+    )
 
 
 @patch("vocab_tester.quiz_screen.is_wsl", return_value=True)
 @patch(
     "vocab_tester.quiz_screen.subprocess.check_output",
-    return_value=b"C:\\fake_audio.wav",
+    return_value=b"C:\\fake_audio.mp3",
 )
 @patch("vocab_tester.quiz_screen.subprocess.run")
 @patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
+@patch("vocab_tester.quiz_screen.gTTS")
 def test_generate_and_play_audio_wsl(
+    mock_gtts_class,
     mock_tempfile,
     mock_subprocess_run,
     mock_subprocess_check_output,
@@ -126,39 +124,25 @@ def test_generate_and_play_audio_wsl(
     # Mock temp file context managers
     mock_mp3_obj = MagicMock()
     mock_mp3_obj.name = "/tmp/fake_audio.mp3"
-    mock_wav_obj = MagicMock()
-    mock_wav_obj.name = "/tmp/fake_audio.wav"
-    mock_tempfile.return_value.__enter__.side_effect = [mock_mp3_obj, mock_wav_obj]
+    mock_tempfile.return_value.__enter__.return_value = mock_mp3_obj
 
-    # Mock gTTS using patch.dict on sys.modules because it's imported locally
-    mock_gtts_module = MagicMock()
-    mock_gtts_class = MagicMock()
-    mock_gtts_module.gTTS = mock_gtts_class
+    # Call the synchronous method directly
+    screen._generate_and_play_audio("Konnichiwa")
 
-    with patch.dict(sys.modules, {"gtts": mock_gtts_module}):
-        # Call the synchronous method directly
-        screen._generate_and_play_audio("Konnichiwa")
+    # Verify gTTS interactions
+    mock_gtts_class.assert_called_once_with("Konnichiwa", lang="ja")
+    mock_gtts_class.return_value.save.assert_called_once_with("/tmp/fake_audio.mp3")
 
-        # Verify gTTS interactions
-        mock_gtts_class.assert_called_once_with("Konnichiwa", lang="ja")
-        mock_gtts_class.return_value.save.assert_called_once_with("/tmp/fake_audio.mp3")
-
-        # Verify subprocess interactions
-        mock_subprocess_run.assert_any_call(
-            ["mpg123", "-q", "-w", "/tmp/fake_audio.wav", "/tmp/fake_audio.mp3"],
-            check=False,
-        )
-        mock_subprocess_check_output.assert_called_once_with(
-            ["wslpath", "-w", "/tmp/fake_audio.wav"]
-        )
-        mock_subprocess_run.assert_any_call(
-            [
-                "powershell.exe",
-                "-Command",
-                "(New-Object System.Media.SoundPlayer 'C:\\fake_audio.wav').PlaySync()",
-            ],
-            check=False,
-        )
+    # Verify subprocess interactions
+    mock_subprocess_check_output.assert_called_once_with(
+        ["wslpath", "-w", "/tmp/fake_audio.mp3"]
+    )
+    mock_subprocess_run.assert_called_once_with(
+        ["ffplay.exe", "-nodisp", "-autoexit", "C:\\fake_audio.mp3"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
 
 
 def test_audio_missing_gtts(screen):
