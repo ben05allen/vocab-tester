@@ -33,7 +33,7 @@ class MockQuizScreen(QuizScreen):
         self._mocks = {}
         self.app_mock = MagicMock()
 
-    def query_one(self, selector, type=None):
+    def query_one(self, selector, type=None):  # type: ignore
         if selector not in self._mocks:
             m = MagicMock()
             m.value = ""
@@ -175,19 +175,17 @@ def test_audio_missing_gtts(screen):
 @patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
 @patch("vocab_tester.quiz_screen.subprocess.run")
 @patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-def test_audio_playback_error(mock_tempfile, mock_subprocess, mock_is_wsl, screen):
+@patch("vocab_tester.quiz_screen.gTTS")
+def test_audio_playback_error(
+    mock_gtts_class, mock_tempfile, mock_subprocess, mock_is_wsl, screen
+):
     """Test handling of playback errors."""
     mock_tempfile.return_value.__enter__.return_value.name = "f"
 
-    # Mock gTTS
-    mock_gtts_module = MagicMock()
-    with patch.dict(sys.modules, {"gtts": mock_gtts_module}):
-        # Make subprocess raise an exception
-        mock_subprocess.side_effect = Exception("Boom")
+    # Make subprocess raise an exception
+    mock_subprocess.side_effect = Exception("Boom")
 
-        screen._generate_and_play_audio("test")
+    screen._generate_and_play_audio("test")
 
-        # Verify notification
-        screen.app.notify.assert_called_with(
-            "Error playing audio: Boom", severity="error"
-        )
+    # Verify notification
+    screen.app.notify.assert_called_with("Error playing audio: Boom", severity="error")
