@@ -23,11 +23,9 @@ def test_get_and_update_word(temp_db):
     temp_db.add_word(old_word)
 
     # Get it to find ID
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT id FROM words WHERE kanji_word='OldKanji'")
-    word_id = cur.fetchone()[0]
-    con.close()
+    with temp_db.get_cursor() as cur:
+        cur.execute("SELECT id FROM words WHERE kanji_word='OldKanji'")
+        word_id = cur.fetchone()[0]
 
     # Test get_word
     word = temp_db.get_word(word_id)

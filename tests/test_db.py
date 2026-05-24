@@ -13,32 +13,28 @@ def temp_db(tmp_path):
 
 def test_init_creates_tables(temp_db):
     """Test that initializing the database creates the necessary tables."""
-    con = temp_db.get_connection()
-    cur = con.cursor()
+    with temp_db.get_cursor() as cur:
+        # Check words table
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='words'"
+        )
+        assert cur.fetchone() is not None
 
-    # Check words table
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='words'")
-    assert cur.fetchone() is not None
-
-    # Check last_tested table
-    cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='last_tested'"
-    )
-    # Note: currently the schema file has last_tested, but let's double check if my read of db.py earlier initialized it.
-    # Looking at db.py _init_db method, it executes the whole script.
-    assert cur.fetchone() is not None
-
-    con.close()
+        # Check last_tested table
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='last_tested'"
+        )
+        # Note: currently the schema file has last_tested, but let's double check if my read of db.py earlier initialized it.
+        # Looking at db.py _init_db method, it executes the whole script.
+        assert cur.fetchone() is not None
 
 
 def test_seed_data(temp_db):
     """Test that the database is seeded with initial data."""
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT COUNT(*) FROM words")
-    count = cur.fetchone()[0]
+    with temp_db.get_cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM words")
+        count = cur.fetchone()[0]
     assert count > 0
-    con.close()
 
 
 def test_record_result(temp_db):
@@ -50,20 +46,24 @@ def test_record_result(temp_db):
     # Record a correct answer
     temp_db.record_result(word_id, True)
 
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT last_correct FROM last_tested WHERE word_id = ?", (word_id,))
-    row = cur.fetchone()
+    with temp_db.get_cursor() as cur:
+        cur.execute(
+            "SELECT last_correct FROM last_tested WHERE word_id = ?", (word_id,)
+        )
+        row = cur.fetchone()
+
     assert row is not None
     assert row[0] == 1
 
     # Update to incorrect
     temp_db.record_result(word_id, False)
-    cur.execute("SELECT last_correct FROM last_tested WHERE word_id = ?", (word_id,))
-    row = cur.fetchone()
-    assert row[0] == 0
+    with temp_db.get_cursor() as cur:
+        cur.execute(
+            "SELECT last_correct FROM last_tested WHERE word_id = ?", (word_id,)
+        )
+        row = cur.fetchone()
 
-    con.close()
+    assert row[0] == 0
 
 
 def test_add_word(temp_db):
@@ -79,14 +79,12 @@ def test_add_word(temp_db):
 
     temp_db.add_word(word)
 
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute(
-        "SELECT * FROM words WHERE kanji_word = ?",
-        (word.kanji_word,),
-    )
-    row = cur.fetchone()
-    con.close()
+    with temp_db.get_cursor() as cur:
+        cur.execute(
+            "SELECT * FROM words WHERE kanji_word = ?",
+            (word.kanji_word,),
+        )
+        row = cur.fetchone()
 
     assert row is not None
     # schema: id, kanji_word, japanese_sentence, kana_word, english_word, english_sentence, tag
@@ -111,11 +109,9 @@ def test_add_word_tag_fallback(temp_db):
 
     temp_db.add_word(word)
 
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT tag FROM words WHERE kanji_word = ?", (word.kanji_word,))
-    tag = cur.fetchone()[0]
-    con.close()
+    with temp_db.get_cursor() as cur:
+        cur.execute("SELECT tag FROM words WHERE kanji_word = ?", (word.kanji_word,))
+        tag = cur.fetchone()[0]
 
     assert tag == "none"
 
@@ -123,11 +119,8 @@ def test_add_word_tag_fallback(temp_db):
 def test_get_tags_ordering(temp_db):
     """Test that tags are returned ordered by most recent word ID."""
     # Clear seeded data
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("DELETE FROM words")
-    con.commit()
-    con.close()
+    with temp_db.get_cursor(commit=True) as cur:
+        cur.execute("DELETE FROM words")
 
     # Add words with different tags
     # Word 1: Tag A
@@ -253,11 +246,9 @@ def test_get_incorrect_word_ids(temp_db):
     temp_db.add_word(word)
 
     # We need the ID.
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT id FROM words WHERE kanji_word = 'IncorrectID'")
-    w_id = cur.fetchone()[0]
-    con.close()
+    with temp_db.get_cursor() as cur:
+        cur.execute("SELECT id FROM words WHERE kanji_word = 'IncorrectID'")
+        w_id = cur.fetchone()[0]
 
     temp_db.record_result(w_id, correct=False)
 
@@ -287,11 +278,9 @@ def test_get_random_word_ids_excludes(temp_db):
     )
     temp_db.add_word(word)
 
-    con = temp_db.get_connection()
-    cur = con.cursor()
-    cur.execute("SELECT id FROM words WHERE kanji_word = 'ExcludeMeID'")
-    w_id = cur.fetchone()[0]
-    con.close()
+    with temp_db.get_cursor() as cur:
+        cur.execute("SELECT id FROM words WHERE kanji_word = 'ExcludeMeID'")
+        w_id = cur.fetchone()[0]
 
     # Exclude it
     ids = temp_db.get_random_word_ids(limit=100, exclude_ids=[w_id])
