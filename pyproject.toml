@@ -35,3 +35,6 @@ dev = [
 pythonpath = "src"
 testpaths = ["tests"]
 addopts = "--cov=vocab_tester --cov-report=term-missing"
+filterwarnings = [
+    "ignore:.*_UnionGenericAlias.*:DeprecationWarning"
+]
