@@ -13,7 +13,7 @@ class MockDatabase:
 
 class AddWordApp(App):
     def on_mount(self) -> None:
-        self.push_screen(AddWordScreen(MockDatabase()))
+        self.push_screen(AddWordScreen(MockDatabase()))  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -41,19 +41,19 @@ async def test_generate_ai_data_updates_inputs():
         screen.ai_service.generate_word_data.return_value = mock_data
 
         # Set kanji input directly
-        screen.query_one("#kanji").value = "学校"
+        screen.query_one("#kanji").value = "学校"  # type: ignore
 
         # Click generate
         await pilot.click("#generate_btn")
 
         # Wait for the worker to finish
         for _ in range(20):
-            if screen.query_one("#kana").value == "がっこう":
+            if screen.query_one("#kana").value == "がっこう":  # type: ignore
                 break
             await asyncio.sleep(0.1)
 
         # Check if values are populated
-        assert screen.query_one("#kana").value == "がっこう"
-        assert screen.query_one("#english").value == "school"
-        assert screen.query_one("#jp_sentence").value == "学校に行きます。"
-        assert screen.query_one("#en_sentence").value == "I go to school."
+        assert screen.query_one("#kana").value == "がっこう"  # type: ignore
+        assert screen.query_one("#english").value == "school"  # type: ignore
+        assert screen.query_one("#jp_sentence").value == "学校に行きます。"  # type: ignore
+        assert screen.query_one("#en_sentence").value == "I go to school."  # type: ignore

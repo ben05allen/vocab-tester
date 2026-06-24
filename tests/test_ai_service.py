@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from vocab_tester.ai_service import AIService, AIServiceError
+from vocab_tester.ai_service import AIService, AIServiceError, GeneratedWordData
 
 
 def test_ai_service_initialization_no_api_key():
@@ -10,14 +10,18 @@ def test_ai_service_initialization_no_api_key():
 
 
 def test_ai_service_generate_word_data_success():
-    mock_client = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = '{"kana_word": "がっこう", "english_word": "school", "japanese_sentence": "学校に行きます。", "english_sentence": "I go to school."}'
-    mock_response.parsed = None
-    mock_client.models.generate_content.return_value = mock_response
+    mock_agent_instance = MagicMock()
+    mock_run_result = MagicMock()
+    mock_run_result.output = GeneratedWordData(
+        kana_word="がっこう",
+        english_word="school",
+        japanese_sentence="学校に行きます。",
+        english_sentence="I go to school.",
+    )
+    mock_agent_instance.run_sync.return_value = mock_run_result
 
     with patch("os.getenv", return_value="fake_key"):
-        with patch("google.genai.Client", return_value=mock_client):
+        with patch("vocab_tester.ai_service.Agent", return_value=mock_agent_instance):
             service = AIService()
             data = service.generate_word_data("学校")
 
@@ -28,11 +32,13 @@ def test_ai_service_generate_word_data_success():
 
 
 def test_ai_service_generate_word_data_failure():
-    mock_client = MagicMock()
-    mock_client.models.generate_content.side_effect = Exception("API Error")
+    mock_agent_instance = MagicMock()
+    mock_agent_instance.run_sync.side_effect = Exception("API Error")
 
     with patch("os.getenv", return_value="fake_key"):
-        with patch("google.genai.Client", return_value=mock_client):
+        with patch("vocab_tester.ai_service.Agent", return_value=mock_agent_instance):
             service = AIService()
-            with pytest.raises(AIServiceError, match="Failed to generate word data"):
+            with pytest.raises(
+                AIServiceError, match="Failed to generate word data: API Error"
+            ):
                 service.generate_word_data("学校")
