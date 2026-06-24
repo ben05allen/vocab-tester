@@ -2,8 +2,28 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from typing import Annotated
 
 load_dotenv()
+
+
+# Defining annotated types
+KanaStr = Annotated[
+    str, Field(description="The kana reading of the kanji word", min_length=1)
+]
+EnglishStr = Annotated[
+    str, Field(description="The English translation of the word", min_length=1)
+]
+JpSentence = Annotated[
+    str,
+    Field(
+        description="A simple Japanese example sentence using the word", min_length=1
+    ),
+]
+EnSentence = Annotated[
+    str,
+    Field(description="The English translation of the example sentence", min_length=1),
+]
 
 
 class AIServiceError(Exception):
@@ -11,16 +31,10 @@ class AIServiceError(Exception):
 
 
 class GeneratedWordData(BaseModel):
-    kana_word: str = Field(
-        description="The reading of the kanji word in hiragana or katakana"
-    )
-    english_word: str = Field(description="The English translation of the word")
-    japanese_sentence: str = Field(
-        description="A simple Japanese example sentence using the word"
-    )
-    english_sentence: str = Field(
-        description="The English translation of the example sentence"
-    )
+    kana_word: KanaStr
+    english_word: EnglishStr
+    japanese_sentence: JpSentence
+    english_sentence: EnSentence
 
 
 class AIService:
@@ -29,7 +43,7 @@ class AIService:
         if not api_key:
             raise AIServiceError("API_KEY not found in environment variables")
         self.agent = Agent(
-            model="google:gemini-2.5-flash-lite",
+            model="google:gemini-3.1-flash-lite",
             output_type=GeneratedWordData,
         )
 
