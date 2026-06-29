@@ -6,6 +6,7 @@ from typing import Annotated
 
 load_dotenv()
 
+MODEL = os.environ["MODEL"]
 
 # Defining annotated types
 KanaStr = Annotated[
@@ -43,7 +44,7 @@ class AIService:
         if not api_key:
             raise AIServiceError("API_KEY not found in environment variables")
         self.agent = Agent(
-            model="google:gemini-3.1-flash-lite",
+            model=MODEL,
             output_type=GeneratedWordData,
         )
 
