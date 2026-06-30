@@ -102,6 +102,12 @@ class QuizScreen(Container):
 
             with Horizontal(id="footer-buttons"):
                 yield Button("Next", variant="primary", id="next_btn")
+                yield Button(
+                    "Test Again",
+                    variant="warning",
+                    id="test_again_btn",
+                    classes="hidden",
+                )
                 yield Button("Filter", variant="default", id="filter_btn")
                 yield Button("Quit", variant="error", id="quit_btn")
 
@@ -181,6 +187,7 @@ class QuizScreen(Container):
         self.query_one("#footer-buttons").styles.display = "none"
         self.query_one("#copy_btn").add_class("hidden")
         self.query_one("#audio_btn").add_class("hidden")
+        self.query_one("#test_again_btn").add_class("hidden")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if not self.question_data:
@@ -249,11 +256,17 @@ class QuizScreen(Container):
         self.query_one("#footer-buttons").styles.display = "block"
         self.query_one("#copy_btn").remove_class("hidden")
         self.query_one("#audio_btn").remove_class("hidden")
+        if not overall_correct:
+            self.query_one("#test_again_btn").remove_class("hidden")
+        else:
+            self.query_one("#test_again_btn").add_class("hidden")
         self.query_one("#next_btn").focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "next_btn":
             self.next_question()
+        elif event.button.id == "test_again_btn":
+            self.test_again()
         elif event.button.id == "quit_btn":
             self.app.exit()
         elif event.button.id == "filter_btn":
@@ -263,6 +276,11 @@ class QuizScreen(Container):
                 self.app.copy_to_clipboard(self.question_data.japanese_sentence)
         elif event.button.id == "audio_btn":
             self.play_audio()
+
+    def test_again(self) -> None:
+        if self.question_data and self.question_data.id is not None:
+            self.queue.insert(0, self.question_data.id)
+            self.next_question()
 
     @work(exclusive=True, thread=True)
     def play_audio(self) -> None:
@@ -373,6 +391,7 @@ class QuizScreen(Container):
 
                 if overall_correct:
                     result_text = "[green bold]Correct![/]"
+                    self.query_one("#test_again_btn").add_class("hidden")
                 else:
                     parts = []
                     if not is_kana_correct:
@@ -380,5 +399,6 @@ class QuizScreen(Container):
                     if not is_meaning_correct:
                         parts.append(f"Meaning: {self.question_data.english_word}")
                     result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
+                    self.query_one("#test_again_btn").remove_class("hidden")
 
                 self.query_one("#result_message", Static).update(result_text)

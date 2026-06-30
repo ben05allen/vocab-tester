@@ -197,3 +197,90 @@ def test_is_answer_correct():
     # Mismatches
     assert is_answer_correct("bye", "hello") is False
     assert is_answer_correct("to stay", "to go; to leave") is False
+
+
+def test_test_again_button_visibility_on_incorrect_answer(screen):
+    """Test that the 'Test Again' button becomes visible when an answer is incorrect."""
+    screen.next_question()
+
+    # Incorrect answer
+    screen.kana_answer = "Wrong"
+    screen.meaning_answer = "Wrong"
+    screen.show_results()
+
+    # #test_again_btn should have remove_class("hidden") called on it
+    btn = screen.query_one("#test_again_btn")
+    btn.remove_class.assert_called_with("hidden")
+
+
+def test_test_again_button_visibility_on_correct_answer(screen):
+    """Test that the 'Test Again' button is hidden when an answer is correct."""
+    screen.next_question()
+
+    # Correct answer
+    screen.kana_answer = "Kana"
+    screen.meaning_answer = "Meaning"
+    screen.show_results()
+
+    # #test_again_btn should have add_class("hidden") called on it
+    btn = screen.query_one("#test_again_btn")
+    btn.add_class.assert_called_with("hidden")
+
+
+def test_test_again_action_requeues_and_resets(screen):
+    """Test that triggering test_again inserts the word ID at index 0 and sets up next question."""
+    screen.next_question()
+    current_id = screen.question_data.id
+
+    # Set queue to some arbitrary list to track it
+    screen.queue = [100, 101, 102]
+
+    # Call test_again
+    screen.test_again()
+
+    # In test_again(), current_id is inserted at 0, making the queue [current_id, 100, 101, 102]
+    # Then next_question() is called, which pops index 0, so the new question_data should be current_id,
+    # and the queue should start with [100, 101, 102]. (And gets refilled to 10 items)
+    assert screen.question_data.id == current_id
+    assert screen.queue[:3] == [100, 101, 102]
+    assert len(screen.queue) == 9  # It has popped one and refilled to 10 (10 - 1 = 9)
+
+    # Also verify that test_again_btn was hidden again upon next_question()
+    btn = screen.query_one("#test_again_btn")
+    btn.add_class.assert_called_with("hidden")
+
+
+def test_test_again_after_edit_word(screen):
+    """Test that editing a word updates the 'Test Again' button visibility."""
+    screen.next_question()
+
+    # Initial incorrect answer
+    screen.kana_answer = "Wrong"
+    screen.meaning_answer = "Wrong"
+    screen.show_results()
+
+    # Should be visible
+    btn = screen.query_one("#test_again_btn")
+    btn.remove_class.assert_called_with("hidden")
+
+    # Reset mock calls on the button to trace new calls
+    btn.add_class.reset_mock()
+    btn.remove_class.reset_mock()
+
+    # Mocking that the DB now returns a word matching our answer "Wrong"
+    updated_word = Word(
+        id=screen.question_data.id,
+        kanji_word="Kanji",
+        japanese_sentence="Sentence",
+        kana_word="Wrong",  # Now matches
+        english_word="Wrong",  # Now matches
+        english_sentence="EngSentence",
+        tag="Tag",
+    )
+    screen.db.get_word = MagicMock(return_value=updated_word)
+
+    # Call edit done with changed=True
+    screen.on_edit_word_done(True)
+
+    # Should now be hidden
+    btn.add_class.assert_called_with("hidden")
