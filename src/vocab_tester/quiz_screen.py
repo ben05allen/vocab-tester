@@ -1,12 +1,5 @@
 from pathlib import Path
-import re
-import subprocess
-import tempfile
 
-from jaconv import kata2hira, kata2alphabet
-from sudachipy import Dictionary
-
-from gtts import gTTS
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Input, Button, Label
@@ -18,56 +11,13 @@ from .db import Database
 from .edit_word_screen import EditWordScreen
 from .tag_screen import TagSelectionScreen
 from .models import Word
-from .wsl_utils import set_ime_mode, is_wsl
-
+from .wsl_utils import set_ime_mode
+from .text_utils import kanji_to_kana, is_answer_correct
+from .audio_service import AudioService
+from .quiz_session import QuizSession
 
 _config_path = Path("settings.toml")
 CONFIG = Config.from_file(_config_path)
-TOKENIZER = Dictionary().create()
-
-
-def kanji_to_kana(text, *, kana_filter: str = "") -> str:
-    if kana_filter == "":
-        kana_filter = CONFIG.translation_kana
-
-    tokens = TOKENIZER.tokenize(text)
-    kana = " ".join(t.reading_form() for t in tokens)
-
-    if kana_filter.lower() == "hiragana":
-        return kata2hira(kana)
-    elif kana_filter.lower() in ["romanji", "latin", "alphabet"]:
-        return kata2alphabet(kana)
-
-    return kana
-
-
-def normalize_text(text: str) -> str:
-    """
-    Normalizes text by converting to lowercase and removing all spaces and punctuation.
-    """
-    # Remove all characters that are not letters or numbers
-    normalized = text.lower()
-    normalized = re.sub(r"[^a-z0-9]", "", normalized)
-    return normalized
-
-
-def is_answer_correct(user_answer: str, correct_answers_str: str) -> bool:
-    """
-    Checks if the user's answer matches any of the semicolon-separated correct answers,
-    ignoring case, spaces, and punctuation.
-    """
-    user_normalized = normalize_text(user_answer)
-    if not user_normalized and user_answer.strip():
-        # If the user typed something that becomes empty after normalization (e.g. just punctuation)
-        # we just fail.
-        # But usually, if they typed "...", it shouldn't match "word".
-        return False
-
-    correct_list = [a.strip() for a in correct_answers_str.split(";")]
-    for correct in correct_list:
-        if user_normalized == normalize_text(correct):
-            return True
-    return False
 
 
 class QuizScreen(Container):
@@ -76,15 +26,44 @@ class QuizScreen(Container):
     current_word = reactive(None)
     step = reactive("kana")  # kana -> meaning -> result
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database) -> None:
         super().__init__()
         self.db = db
-        self.queue: list[int] = []
-        self.question_data: Word | None = None
+
+        # Load default filter if set and valid
+        default_filter = CONFIG.default_filter
+        available_tags = self.db.get_tags() if hasattr(self.db, "get_tags") else []
+        initial_tag = default_filter if default_filter in available_tags else None
+
+        self.session = QuizSession(db, initial_tag)
+        self.audio_service = AudioService()
         self.kana_answer = ""
         self.meaning_answer = ""
         self.full_info = ""
-        self.current_tag_filter = None
+
+    @property
+    def queue(self) -> list[int]:
+        return self.session.queue
+
+    @queue.setter
+    def queue(self, val: list[int]) -> None:
+        self.session.queue = val
+
+    @property
+    def question_data(self) -> Word | None:
+        return self.session.current_word
+
+    @question_data.setter
+    def question_data(self, val: Word | None) -> None:
+        self.session.current_word = val
+
+    @property
+    def current_tag_filter(self) -> str | None:
+        return self.session.current_tag_filter
+
+    @current_tag_filter.setter
+    def current_tag_filter(self, val: str | None) -> None:
+        self.session.current_tag_filter = val
 
     def compose(self) -> ComposeResult:
         with Container(id="container"):
@@ -112,56 +91,21 @@ class QuizScreen(Container):
                 yield Button("Quit", variant="error", id="quit_btn")
 
     def on_mount(self) -> None:
-        # Load default filter if set and valid
-        default_filter = CONFIG.default_filter
-        if default_filter:
-            available_tags = self.db.get_tags()
-            if default_filter in available_tags:
-                self.current_tag_filter = default_filter
-                self.query_one("#filter_label", Label).update(
-                    f"Filter: {default_filter}"
-                )
+        if self.session.current_tag_filter:
+            self.query_one("#filter_label", Label).update(
+                f"Filter: {self.session.current_tag_filter}"
+            )
 
         self.next_question()
 
     def next_question(self) -> None:
-        needed = 10 - len(self.queue)
-        if needed > 0:
-            exclude_ids = list(self.queue)
+        word = self.session.next_question()
 
-            # 1. Fetch incorrect words first
-            incorrect_ids = self.db.get_incorrect_word_ids(
-                limit=needed,
-                tag_filter=self.current_tag_filter,
-                exclude_ids=exclude_ids,
-            )
-            self.queue.extend(incorrect_ids)
-
-            needed -= len(incorrect_ids)
-            if needed > 0:
-                exclude_ids.extend(incorrect_ids)
-
-                # 2. Fetch random words for the rest
-                random_ids = self.db.get_random_word_ids(
-                    limit=needed,
-                    tag_filter=self.current_tag_filter,
-                    exclude_ids=exclude_ids,
-                )
-                self.queue.extend(random_ids)
-
-        if not self.queue:
+        if not word:
             self.query_one("#sentence_label", Label).update(
                 "No words found for this filter!"
             )
             self.query_one("#answer_input", Input).disabled = True
-            return
-
-        word_id = self.queue.pop(0)
-        self.question_data = self.db.get_word(word_id)
-
-        # If word not found (deleted?), skip
-        if not self.question_data:
-            self.next_question()
             return
 
         self.step = "kana"
@@ -170,11 +114,9 @@ class QuizScreen(Container):
         self.meaning_answer = ""
         self.full_info = ""
 
-        self.query_one("#sentence_label", Label).update(
-            self.question_data.japanese_sentence
-        )
+        self.query_one("#sentence_label", Label).update(word.japanese_sentence)
         self.query_one("#prompt_label", Label).update(
-            f"Reading for: [white]{self.question_data.kanji_word}[/]"
+            f"Reading for: [white]{word.kanji_word}[/]"
         )
 
         inp = self.query_one("#answer_input", Input)
@@ -190,7 +132,7 @@ class QuizScreen(Container):
         self.query_one("#test_again_btn").add_class("hidden")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if not self.question_data:
+        if not self.session.current_word:
             return
 
         val = event.value.strip()
@@ -200,7 +142,7 @@ class QuizScreen(Container):
             self.step = "meaning"
             set_ime_mode(False)
             self.query_one("#prompt_label", Label).update(
-                f"Meaning of: [white]{self.question_data.kanji_word}[/]"
+                f"Meaning of: [white]{self.session.current_word.kanji_word}[/]"
             )
             event.input.value = ""
 
@@ -209,47 +151,39 @@ class QuizScreen(Container):
             self.show_results()
 
     def show_results(self) -> None:
-        if not self.question_data:
+        if not self.session.current_word:
             return
 
         self.step = "result"
         self.query_one("#answer_input", Input).disabled = True
 
-        is_kana_correct = self.kana_answer == self.question_data.kana_word
-        # Validate meaning
+        is_kana_correct = self.kana_answer == self.session.current_word.kana_word
         is_meaning_correct = is_answer_correct(
-            self.meaning_answer, self.question_data.english_word
+            self.meaning_answer, self.session.current_word.english_word
         )
         overall_correct = is_kana_correct and is_meaning_correct
 
-        # Record result (logic in db can be expanded)
-        if self.question_data.id:
-            self.db.record_result(self.question_data.id, overall_correct)
-            if hasattr(self.app, "update_score"):
-                self.app.update_score(overall_correct)  # type: ignore
-
-            # Re-queue the word at different positions to practice again
-            # if not already in the queue a couple of times
-            if not overall_correct and self.queue[1:].count(self.question_data.id) < 2:
-                self.queue.insert(2, self.question_data.id)
-                self.queue.insert(5, self.question_data.id)
+        # Record result
+        self.session.record_result(overall_correct)
+        if hasattr(self.app, "update_score"):
+            self.app.update_score(overall_correct)  # type: ignore
 
         if overall_correct:
             result_text = "[green bold]Correct![/]"
         else:
             parts = []
             if not is_kana_correct:
-                parts.append(f"Reading: {self.question_data.kana_word}")
+                parts.append(f"Reading: {self.session.current_word.kana_word}")
             if not is_meaning_correct:
-                parts.append(f"Meaning: {self.question_data.english_word}")
+                parts.append(f"Meaning: {self.session.current_word.english_word}")
             result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
 
         self.query_one("#result_message", Static).update(result_text)
 
         self.full_info = (
-            f"Sentence: {self.question_data.english_sentence}\n"
-            f"Kana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
-            f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
+            f"Sentence: {self.session.current_word.english_sentence}\n"
+            f"Kana: {kanji_to_kana(self.session.current_word.japanese_sentence)}\n"
+            f"({self.session.current_word.kanji_word} = {self.session.current_word.kana_word} / {self.session.current_word.english_word})"
         )
         self.query_one("#full_info", Static).update(self.full_info)
 
@@ -272,80 +206,43 @@ class QuizScreen(Container):
         elif event.button.id == "filter_btn":
             self.app.push_screen(TagSelectionScreen(self.db), self.on_filter_selected)
         elif event.button.id == "copy_btn":
-            if self.question_data:
-                self.app.copy_to_clipboard(self.question_data.japanese_sentence)
+            if self.session.current_word:
+                self.app.copy_to_clipboard(self.session.current_word.japanese_sentence)
         elif event.button.id == "audio_btn":
             self.play_audio()
 
     def test_again(self) -> None:
-        if self.question_data and self.question_data.id is not None:
-            self.queue.insert(0, self.question_data.id)
+        if self.session.current_word and self.session.current_word.id is not None:
+            self.session.queue.insert(0, self.session.current_word.id)
             self.next_question()
 
     @work(exclusive=True, thread=True)
     def play_audio(self) -> None:
-        if not self.question_data or not self.question_data.japanese_sentence:
+        if (
+            not self.session.current_word
+            or not self.session.current_word.japanese_sentence
+        ):
             return
-        self._generate_and_play_audio(self.question_data.japanese_sentence)
+        self._generate_and_play_audio(self.session.current_word.japanese_sentence)
 
     def _generate_and_play_audio(self, sentence: str) -> None:
         try:
-            # Generate audio
-            tts = gTTS(sentence, lang="ja")
-
-            with tempfile.NamedTemporaryFile(suffix=".mp3") as f_mp3:
-                tts.save(f_mp3.name)
-
-                if is_wsl():
-                    win_path = (
-                        subprocess.check_output(["wslpath", "-w", f_mp3.name])
-                        .decode("utf-8")
-                        .strip()
-                    )
-                    subprocess.run(
-                        ["ffplay.exe", "-nodisp", "-autoexit", win_path],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        check=False,
-                    )
-
-                else:
-                    subprocess.run(
-                        [
-                            "mpg123",
-                            "-q",
-                            "-f",
-                            "16384",
-                            "-r",
-                            "44100",
-                            "-b",
-                            "1024",
-                            f_mp3.name,
-                        ],
-                        check=False,
-                    )
-
+            self.audio_service.play_japanese_sentence(sentence)
         except Exception as e:
             self.app.notify(f"Error playing audio: {e}", severity="error")
 
     def on_filter_selected(self, tag: str | None) -> None:
         if tag is None:
-            # Cancelled, do nothing
             return
 
-        # Tag is either a string or "" (empty string for All)
-        self.current_tag_filter = tag if tag else None
+        self.session.set_tag_filter(tag if tag else None)
 
-        # Update label
         label_text = (
-            f"Filter: {self.current_tag_filter}"
-            if self.current_tag_filter
+            f"Filter: {self.session.current_tag_filter}"
+            if self.session.current_tag_filter
             else "Filter: All"
         )
         self.query_one("#filter_label", Label).update(label_text)
-
-        # Clear queue and get new questions
-        self.queue.clear()
 
         # Reset UI state (hide result buttons, clear inputs)
         self.query_one("#answer_input", Input).disabled = False
@@ -358,34 +255,41 @@ class QuizScreen(Container):
         self.next_question()
 
     def action_edit_word(self) -> None:
-        if self.step == "result" and self.question_data and self.question_data.id:
+        if (
+            self.step == "result"
+            and self.session.current_word
+            and self.session.current_word.id
+        ):
             self.app.push_screen(  # type: ignore
-                EditWordScreen(self.db, self.question_data.id), self.on_edit_word_done
+                EditWordScreen(self.db, self.session.current_word.id),
+                self.on_edit_word_done,
             )
 
     def on_edit_word_done(self, changed: bool) -> None:
-        if changed and self.question_data and self.question_data.id:
+        if changed and self.session.current_word and self.session.current_word.id:
             # Reload data
-            word_id = self.question_data.id
+            word_id = self.session.current_word.id
             new_data = self.db.get_word(word_id)
             if new_data:
-                self.question_data = new_data
+                self.session.current_word = new_data
 
                 # Refresh display
                 self.full_info = (
-                    f"Sentence: {self.question_data.english_sentence}\n"
-                    f"Kana: {kanji_to_kana(self.question_data.japanese_sentence)}\n"
-                    f"({self.question_data.kanji_word} = {self.question_data.kana_word} / {self.question_data.english_word})"
+                    f"Sentence: {self.session.current_word.english_sentence}\n"
+                    f"Kana: {kanji_to_kana(self.session.current_word.japanese_sentence)}\n"
+                    f"({self.session.current_word.kanji_word} = {self.session.current_word.kana_word} / {self.session.current_word.english_word})"
                 )
                 self.query_one("#full_info", Static).update(self.full_info)
                 self.query_one("#sentence_label", Label).update(
-                    self.question_data.japanese_sentence
+                    self.session.current_word.japanese_sentence
                 )
 
                 # Re-calculate result message
-                is_kana_correct = self.kana_answer == self.question_data.kana_word
+                is_kana_correct = (
+                    self.kana_answer == self.session.current_word.kana_word
+                )
                 is_meaning_correct = is_answer_correct(
-                    self.meaning_answer, self.question_data.english_word
+                    self.meaning_answer, self.session.current_word.english_word
                 )
                 overall_correct = is_kana_correct and is_meaning_correct
 
@@ -395,9 +299,11 @@ class QuizScreen(Container):
                 else:
                     parts = []
                     if not is_kana_correct:
-                        parts.append(f"Reading: {self.question_data.kana_word}")
+                        parts.append(f"Reading: {self.session.current_word.kana_word}")
                     if not is_meaning_correct:
-                        parts.append(f"Meaning: {self.question_data.english_word}")
+                        parts.append(
+                            f"Meaning: {self.session.current_word.english_word}"
+                        )
                     result_text = "[red bold]Incorrect.[/] " + ", ".join(parts)
                     self.query_one("#test_again_btn").remove_class("hidden")
 

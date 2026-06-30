@@ -65,10 +65,10 @@ def test_audio_button_press_calls_play_audio(screen):
     screen.play_audio.assert_called_once()
 
 
-@patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
-@patch("vocab_tester.quiz_screen.subprocess.run")
-@patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-@patch("vocab_tester.quiz_screen.gTTS")
+@patch("vocab_tester.audio_service.is_wsl", return_value=False)
+@patch("vocab_tester.audio_service.subprocess.run")
+@patch("vocab_tester.audio_service.tempfile.NamedTemporaryFile")
+@patch("vocab_tester.audio_service.gTTS")
 def test_generate_and_play_audio_non_wsl(
     mock_gtts_class, mock_tempfile, mock_subprocess, mock_is_wsl, screen
 ):
@@ -103,14 +103,14 @@ def test_generate_and_play_audio_non_wsl(
     )
 
 
-@patch("vocab_tester.quiz_screen.is_wsl", return_value=True)
+@patch("vocab_tester.audio_service.is_wsl", return_value=True)
 @patch(
-    "vocab_tester.quiz_screen.subprocess.check_output",
+    "vocab_tester.audio_service.subprocess.check_output",
     return_value=b"C:\\fake_audio.mp3",
 )
-@patch("vocab_tester.quiz_screen.subprocess.run")
-@patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-@patch("vocab_tester.quiz_screen.gTTS")
+@patch("vocab_tester.audio_service.subprocess.run")
+@patch("vocab_tester.audio_service.tempfile.NamedTemporaryFile")
+@patch("vocab_tester.audio_service.gTTS")
 def test_generate_and_play_audio_wsl(
     mock_gtts_class,
     mock_tempfile,
@@ -172,10 +172,10 @@ def test_audio_missing_gtts(screen):
     pass
 
 
-@patch("vocab_tester.quiz_screen.is_wsl", return_value=False)
-@patch("vocab_tester.quiz_screen.subprocess.run")
-@patch("vocab_tester.quiz_screen.tempfile.NamedTemporaryFile")
-@patch("vocab_tester.quiz_screen.gTTS")
+@patch("vocab_tester.audio_service.is_wsl", return_value=False)
+@patch("vocab_tester.audio_service.subprocess.run")
+@patch("vocab_tester.audio_service.tempfile.NamedTemporaryFile")
+@patch("vocab_tester.audio_service.gTTS")
 def test_audio_playback_error(
     mock_gtts_class, mock_tempfile, mock_subprocess, mock_is_wsl, screen
 ):
